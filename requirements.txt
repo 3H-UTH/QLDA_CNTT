@@ -1,0 +1,6 @@
+Django>=4.0
+djangorestframework>=3.13
+drf-spectacular>=0.26
+django-cors-headers>=3.13
+mysqlclient>=2.1
+PyJWT>=2.4
