@@ -1,6 +1,6 @@
 openapi: 3.0.3
 info: { title: Rental Management API, version: 1.0.0 }
-servers: [{ url: http://localhost:4000/api }]
+servers: [{ url: http://localhost:8000/api }]
 paths:
   /auth/login:
     post:
@@ -9,20 +9,12 @@ paths:
         required: true
         content:
           application/json:
-            schema: { type: object, properties: { email: {type: string}, password: {type: string} }, required: [email, password] }
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema: { type: object, properties: { token: {type: string}, user: { $ref: '#/components/schemas/User' } } }
-
-  /rooms:
-    get:
-      summary: Danh sách phòng
-      parameters:
-        - in: query; name: page; schema: {type: integer, default: 1}
-        - in: query; name: status; schema: {type: string, enum: [EMPTY, RENTED, MAINT]}
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email: { type: string, format: email }
+                password: { type: string, format: password }
       responses:
         "200":
           description: OK
@@ -30,72 +22,66 @@ paths:
             application/json:
               schema:
                 type: object
-                properties: { data: { type: array, items: { $ref: '#/components/schemas/Room' } }, total: {type: integer} }
+                properties:
+                  access: { type: string }
+                  refresh: { type: string }
+                  user:
+                    $ref: "#/components/schemas/User"
+
+  /rooms:
+    get:
+      summary: Danh sách phòng
+      parameters:
+        - in: query
+          name: status
+          schema: { type: string, enum: [EMPTY, RENTED, MAINT] }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  results:
+                    type: array
+                    items: { $ref: "#/components/schemas/Room" }
+                  count: { type: integer }
+
     post:
       summary: Tạo phòng
       requestBody:
         required: true
         content:
           application/json:
-            schema: { $ref: '#/components/schemas/RoomCreate' }
+            schema: { $ref: "#/components/schemas/RoomCreate" }
       responses: { "201": { description: Created } }
-
-  /contracts:
-    post:
-      summary: Tạo hợp đồng (chỉ khi phòng đang EMPTY)
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema: { $ref: '#/components/schemas/ContractCreate' }
-      responses: { "201": { description: Created } }
-
-  /meter-readings:
-    post:
-      summary: Nhập chỉ số điện nước theo kỳ
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema: { $ref: '#/components/schemas/MeterReadingCreate' }
-      responses: { "201": { description: Created } }
-
-  /invoices/generate:
-    post:
-      summary: Tạo hóa đơn từ chỉ số + dịch vụ
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema: { type: object, properties: { contractId: {type: integer}, period: {type: string, example: "2025-08"} }, required: [contractId, period] }
-      responses: { "201": { description: Created } }
-
-  /payments/callback:
-    post:
-      summary: Webhook thanh toán sandbox
-      responses: { "200": { description: OK } }
 
 components:
   schemas:
-    User: { type: object, properties: { id: {type: integer}, full_name: {type: string}, role: {type: string} } }
+    User:
+      type: object
+      properties:
+        id: { type: integer }
+        full_name: { type: string }
+        role: { type: string, enum: [OWNER, TENANT, TECH] }
+
     Room:
       type: object
-      properties: { id:{type:integer}, building_id:{type:integer}, name:{type:string}, area_m2:{type:number}, base_price:{type:number}, status:{type:string} }
+      properties:
+        id: { type: integer }
+        building_id: { type: integer }
+        name: { type: string }
+        area_m2: { type: number }
+        base_price: { type: number }
+        status: { type: string, enum: [EMPTY, RENTED, MAINT] }
+
     RoomCreate:
       type: object
       required: [building_id, name, base_price]
-      properties: { building_id:{type:integer}, name:{type:string}, area_m2:{type:number}, base_price:{type:number}, status:{type:string, default: EMPTY} }
-    ContractCreate:
-      type: object
-      required: [room_id, tenant_id, start_date]
-      properties: { room_id:{type:integer}, tenant_id:{type:integer}, start_date:{type:string, format:date}, deposit:{type:number} }
-    MeterReadingCreate:
-      type: object
-      required: [contract_id, period, elec_prev, elec_curr, water_prev, water_curr]
       properties:
-        contract_id: {type: integer}
-        period: {type: string, example: "2025-08"}
-        elec_prev: {type: integer}
-        elec_curr: {type: integer}
-        water_prev: {type: integer}
-        water_curr: {type: integer}
+        building_id: { type: integer }
+        name: { type: string }
+        area_m2: { type: number }
+        base_price: { type: number }
+        status: { type: string, enum: [EMPTY, RENTED, MAINT], default: EMPTY }
