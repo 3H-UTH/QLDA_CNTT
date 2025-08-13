@@ -53,7 +53,22 @@ class RegisterSerializer(serializers.ModelSerializer):
 
 # ====== Auth (login/refresh) ======
 class EmailTokenObtainPairSerializer(TokenObtainPairSerializer):
-    username_field = "email"
+    @classmethod
+    def get_token(cls, user):
+        return super().get_token(user)
+    
+    def validate(self, attrs):
+        # Check if 'email' is provided instead of 'username'
+        if 'email' in attrs and 'username' not in attrs:
+            email = attrs.get('email')
+            try:
+                user = User.objects.get(email=email)
+                attrs['username'] = user.username
+                del attrs['email']  # Remove email after getting username
+            except User.DoesNotExist:
+                pass  # Let parent handle the error
+        
+        return super().validate(attrs)
 
 @extend_schema(tags=["Auth"])
 class EmailTokenObtainPairView(TokenObtainPairView):
