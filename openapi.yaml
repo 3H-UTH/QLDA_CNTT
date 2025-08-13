@@ -2,9 +2,10 @@ openapi: 3.0.3
 info: { title: Rental Management API, version: 1.0.0 }
 servers: [{ url: http://localhost:8000/api }]
 paths:
-  /auth/login:
+  /api/auth/login/:
     post:
       summary: Đăng nhập
+      tags: [Auth]
       requestBody:
         required: true
         content:
@@ -28,7 +29,44 @@ paths:
                   user:
                     $ref: "#/components/schemas/User"
 
-  /rooms:
+  /api/auth/register/:
+    post:
+      summary: Đăng ký tài khoản
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, full_name, role, password, password_confirm]
+              properties:
+                email: { type: string, format: email }
+                full_name: { type: string, minLength: 2 }
+                role: { type: string, enum: [OWNER, TENANT, TECH], default: TENANT }
+                password: { type: string, format: password, minLength: 8 }
+                password_confirm: { type: string, format: password }
+      responses:
+        "201":
+          description: Tạo tài khoản thành công, trả JWT
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    type: object
+                    properties:
+                      id: { type: integer }
+                      email: { type: string, format: email }
+                      full_name: { type: string }
+                      role: { type: string }
+                  access: { type: string }
+                  refresh: { type: string }
+        "400":
+          description: Dữ liệu không hợp lệ
+
+  /api/rooms:
     get:
       summary: Danh sách phòng
       parameters:
