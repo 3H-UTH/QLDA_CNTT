@@ -52,6 +52,22 @@ AUTH_USER_MODEL = "accounts.User"
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:8000",
     "https://your-frontend-domain.com",
+    "http://localhost:5173",
+    "https://k9z2h1t3-5173.asse.devtunnels.ms",
+]
+
+# Thêm cấu hình CORS để hỗ trợ phát triển
+CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOWED_HEADERS = [
+    'accept',
+    'accept-encoding',
+    'authorization',
+    'content-type',
+    'dnt',
+    'origin',
+    'user-agent',
+    'x-csrftoken',
+    'x-requested-with',
 ]
 
 REST_FRAMEWORK = {
@@ -60,6 +76,9 @@ REST_FRAMEWORK = {
         "rest_framework_simplejwt.authentication.JWTAuthentication",
     ),
     "DEFAULT_PAGINATION_CLASS": "core.pagination.DefaultPagination",
+    "DEFAULT_PERMISSION_CLASSES": [
+        "rest_framework.permissions.IsAuthenticated"
+    ]
 }
 
 
@@ -72,6 +91,7 @@ REST_FRAMEWORK.update({
 })
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -88,8 +108,12 @@ SPECTACULAR_SETTINGS = {
     "TAGS": [
         {"name": "Auth", "description": "Đăng ký, đăng nhập, refresh token"},
         {"name": "Rooms", "description": "Quản lý phòng trọ"},
-        {"name": "Contracts", "description": "Quản lý hợp đồng thuê phòng"},
+        {"name": "Contracts", "description": "Hợp đồng thuê & trả phòng"},
+        {"name":"Readings","description":"Nhập chỉ số điện nước theo kỳ"},
     ],
+    "ENUM_NAME_OVERRIDES": {
+        "Status094Enum": "ContractStatusEnum",  # Fix enum naming collision
+    },
 }
 
 ROOT_URLCONF = 'rental.urls'
@@ -121,8 +145,8 @@ DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.mysql",
         "NAME": "rental_db",
-        "USER": "rental_user",
-        "PASSWORD": "strong_password",
+        "USER": "root",
+        "PASSWORD": "",
         "HOST": "127.0.0.1",
         "PORT": "3306",
         "OPTIONS": {

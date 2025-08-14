@@ -1,125 +1,779 @@
 openapi: 3.0.3
-info: { title: Rental Management API, version: 1.0.0 }
-servers: [{ url: http://localhost:8000/api }]
+info:
+  title: Rental Management API
+  version: 1.0.0
 paths:
   /api/auth/login/:
     post:
-      summary: Đăng nhập
-      tags: [Auth]
+      operationId: api_auth_login_create
+      description: |-
+        Takes a set of user credentials and returns an access and refresh JSON web
+        token pair to prove the authentication of those credentials.
+      tags:
+      - Auth
       requestBody:
-        required: true
         content:
           application/json:
             schema:
-              type: object
-              required: [email, password]
-              properties:
-                email: { type: string, format: email }
-                password: { type: string, format: password }
+              $ref: '#/components/schemas/EmailTokenObtainPair'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/EmailTokenObtainPair'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/EmailTokenObtainPair'
+        required: true
       responses:
-        "200":
-          description: OK
+        '200':
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  access: { type: string }
-                  refresh: { type: string }
-                  user:
-                    $ref: "#/components/schemas/User"
-
+                $ref: '#/components/schemas/EmailTokenObtainPair'
+          description: ''
+  /api/auth/refresh/:
+    post:
+      operationId: api_auth_refresh_create
+      description: |-
+        Takes a refresh type JSON web token and returns an access type JSON web
+        token if the refresh token is valid.
+      tags:
+      - Auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenRefresh'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenRefresh'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TokenRefresh'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenRefresh'
+          description: ''
   /api/auth/register/:
     post:
-      summary: Đăng ký tài khoản
-      tags: [Auth]
+      operationId: api_auth_register_create
+      tags:
+      - Auth
       requestBody:
-        required: true
         content:
           application/json:
             schema:
-              type: object
-              required: [email, full_name, role, password, password_confirm]
-              properties:
-                email: { type: string, format: email }
-                full_name: { type: string, minLength: 2 }
-                role: { type: string, enum: [OWNER, TENANT, TECH], default: TENANT }
-                password: { type: string, format: password, minLength: 8 }
-                password_confirm: { type: string, format: password }
-      responses:
-        "201":
-          description: Tạo tài khoản thành công, trả JWT
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  user:
-                    type: object
-                    properties:
-                      id: { type: integer }
-                      email: { type: string, format: email }
-                      full_name: { type: string }
-                      role: { type: string }
-                  access: { type: string }
-                  refresh: { type: string }
-        "400":
-          description: Dữ liệu không hợp lệ
-
-  /api/rooms:
-    get:
-      summary: Danh sách phòng
-      parameters:
-        - in: query
-          name: status
-          schema: { type: string, enum: [EMPTY, RENTED, MAINT] }
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  results:
-                    type: array
-                    items: { $ref: "#/components/schemas/Room" }
-                  count: { type: integer }
-
-    post:
-      summary: Tạo phòng
-      requestBody:
+              $ref: '#/components/schemas/Register'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Register'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Register'
         required: true
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /api/contracts/:
+    get:
+      operationId: api_contracts_list
+      parameters:
+      - in: query
+        name: billing_cycle
+        schema:
+          type: string
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: room
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - ACTIVE
+          - ENDED
+          - SUSPENDED
+        description: |-
+          * `ACTIVE` - ACTIVE
+          * `ENDED` - ENDED
+          * `SUSPENDED` - SUSPENDED
+      - in: query
+        name: tenant
+        schema:
+          type: integer
+      tags:
+      - Contracts
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedContractList'
+          description: ''
+    post:
+      operationId: api_contracts_create
+      tags:
+      - Contracts
+      requestBody:
         content:
           application/json:
-            schema: { $ref: "#/components/schemas/RoomCreate" }
-      responses: { "201": { description: Created } }
-
+            schema:
+              $ref: '#/components/schemas/ContractCreate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ContractCreate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ContractCreate'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContractCreate'
+          description: ''
+  /api/contracts/{id}/:
+    get:
+      operationId: api_contracts_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this contract.
+        required: true
+      tags:
+      - Contracts
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Contract'
+          description: ''
+    put:
+      operationId: api_contracts_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this contract.
+        required: true
+      tags:
+      - Contracts
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Contract'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Contract'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Contract'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Contract'
+          description: ''
+    patch:
+      operationId: api_contracts_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this contract.
+        required: true
+      tags:
+      - Contracts
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedContract'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedContract'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedContract'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Contract'
+          description: ''
+    delete:
+      operationId: api_contracts_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this contract.
+        required: true
+      tags:
+      - Contracts
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/contracts/{id}/end/:
+    post:
+      operationId: api_contracts_end_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this contract.
+        required: true
+      tags:
+      - Contracts
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Contract'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Contract'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Contract'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Contract'
+          description: ''
+  /api/rooms/:
+    get:
+      operationId: api_rooms_list
+      parameters:
+      - in: query
+        name: building
+        schema:
+          type: integer
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - EMPTY
+          - MAINT
+          - RENTED
+        description: |-
+          * `EMPTY` - EMPTY
+          * `RENTED` - RENTED
+          * `MAINT` - MAINT
+      tags:
+      - Rooms
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedRoomList'
+          description: ''
+    post:
+      operationId: api_rooms_create
+      tags:
+      - Rooms
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Room'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Room'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Room'
+        required: true
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Room'
+          description: ''
+  /api/rooms/{id}/:
+    get:
+      operationId: api_rooms_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this room.
+        required: true
+      tags:
+      - Rooms
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Room'
+          description: ''
+    put:
+      operationId: api_rooms_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this room.
+        required: true
+      tags:
+      - Rooms
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Room'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Room'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Room'
+        required: true
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Room'
+          description: ''
+    patch:
+      operationId: api_rooms_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this room.
+        required: true
+      tags:
+      - Rooms
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedRoom'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedRoom'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedRoom'
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Room'
+          description: ''
+    delete:
+      operationId: api_rooms_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this room.
+        required: true
+      tags:
+      - Rooms
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '204':
+          description: No response body
 components:
   schemas:
-    User:
+    Contract:
       type: object
       properties:
-        id: { type: integer }
-        full_name: { type: string }
-        role: { type: string, enum: [OWNER, TENANT, TECH] }
-
+        id:
+          type: integer
+          readOnly: true
+        room:
+          type: integer
+        room_name:
+          type: string
+          readOnly: true
+        tenant:
+          type: integer
+        tenant_name:
+          type: string
+          readOnly: true
+        start_date:
+          type: string
+          format: date
+        end_date:
+          type: string
+          format: date
+          nullable: true
+        deposit:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+        billing_cycle:
+          type: string
+          maxLength: 10
+        status:
+          $ref: '#/components/schemas/Status094Enum'
+      required:
+      - id
+      - room
+      - room_name
+      - start_date
+      - tenant
+      - tenant_name
+    ContractCreate:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        room:
+          type: integer
+        tenant:
+          type: integer
+        start_date:
+          type: string
+          format: date
+        end_date:
+          type: string
+          format: date
+          nullable: true
+        deposit:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+        billing_cycle:
+          type: string
+          maxLength: 10
+        status:
+          allOf:
+          - $ref: '#/components/schemas/Status094Enum'
+          readOnly: true
+      required:
+      - id
+      - room
+      - start_date
+      - status
+      - tenant
+    EmailTokenObtainPair:
+      type: object
+      properties:
+        username:
+          type: string
+          writeOnly: true
+        password:
+          type: string
+          writeOnly: true
+      required:
+      - password
+      - username
+    PaginatedContractList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Contract'
+    PaginatedRoomList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Room'
+    PatchedContract:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        room:
+          type: integer
+        room_name:
+          type: string
+          readOnly: true
+        tenant:
+          type: integer
+        tenant_name:
+          type: string
+          readOnly: true
+        start_date:
+          type: string
+          format: date
+        end_date:
+          type: string
+          format: date
+          nullable: true
+        deposit:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+        billing_cycle:
+          type: string
+          maxLength: 10
+        status:
+          $ref: '#/components/schemas/Status094Enum'
+    PatchedRoom:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 50
+        area_m2:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,4}(?:\.\d{0,2})?$
+          nullable: true
+        base_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+        status:
+          $ref: '#/components/schemas/RoomStatusEnum'
+        building:
+          type: integer
+    Register:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 254
+        full_name:
+          type: string
+          minLength: 2
+        role:
+          $ref: '#/components/schemas/RoleEnum'
+        password:
+          type: string
+          writeOnly: true
+        password_confirm:
+          type: string
+          writeOnly: true
+      required:
+      - email
+      - full_name
+      - password
+      - password_confirm
+    RoleEnum:
+      enum:
+      - OWNER
+      - TENANT
+      - TECH
+      type: string
+      description: |-
+        * `OWNER` - OWNER
+        * `TENANT` - TENANT
+        * `TECH` - TECH
     Room:
       type: object
       properties:
-        id: { type: integer }
-        building_id: { type: integer }
-        name: { type: string }
-        area_m2: { type: number }
-        base_price: { type: number }
-        status: { type: string, enum: [EMPTY, RENTED, MAINT] }
-
-    RoomCreate:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 50
+        area_m2:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,4}(?:\.\d{0,2})?$
+          nullable: true
+        base_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+        status:
+          $ref: '#/components/schemas/RoomStatusEnum'
+        building:
+          type: integer
+      required:
+      - base_price
+      - building
+      - id
+      - name
+    RoomStatusEnum:
+      enum:
+      - EMPTY
+      - RENTED
+      - MAINT
+      type: string
+      description: |-
+        * `EMPTY` - EMPTY
+        * `RENTED` - RENTED
+        * `MAINT` - MAINT
+    Status094Enum:
+      enum:
+      - ACTIVE
+      - ENDED
+      - SUSPENDED
+      type: string
+      description: |-
+        * `ACTIVE` - ACTIVE
+        * `ENDED` - ENDED
+        * `SUSPENDED` - SUSPENDED
+    TokenRefresh:
       type: object
-      required: [building_id, name, base_price]
       properties:
-        building_id: { type: integer }
-        name: { type: string }
-        area_m2: { type: number }
-        base_price: { type: number }
-        status: { type: string, enum: [EMPTY, RENTED, MAINT], default: EMPTY }
+        access:
+          type: string
+          readOnly: true
+        refresh:
+          type: string
+      required:
+      - access
+      - refresh
+  securitySchemes:
+    jwtAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+tags:
+- name: Auth
+  description: Đăng ký, đăng nhập, refresh token
+- name: Rooms
+  description: Quản lý phòng trọ
+- name: Contracts
+  description: Quản lý hợp đồng thuê phòng

@@ -81,6 +81,7 @@ class RefreshTokenView(TokenRefreshView):
 @extend_schema(tags=["Auth"], request=RegisterSerializer)
 class RegisterView(APIView):
     permission_classes = [AllowAny]
+    serializer_class = RegisterSerializer  # Thêm dòng này để fix warning
 
     def post(self, request):
         s = RegisterSerializer(data=request.data)

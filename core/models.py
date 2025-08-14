@@ -39,14 +39,19 @@ class Contract(models.Model):
         ]
 
 class MeterReading(models.Model):
-    contract = models.ForeignKey(Contract, on_delete=models.CASCADE, related_name="readings")
-    period = models.CharField(max_length=7)  # YYYY-MM
+    contract = models.ForeignKey("core.Contract", on_delete=models.CASCADE, related_name="readings")
+    period = models.CharField(max_length=7)  # "YYYY-MM"
     elec_prev = models.IntegerField()
     elec_curr = models.IntegerField()
     water_prev = models.IntegerField()
     water_curr = models.IntegerField()
     elec_price = models.DecimalField(max_digits=12, decimal_places=2, default=3500)
     water_price = models.DecimalField(max_digits=12, decimal_places=2, default=7000)
+    created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        unique_together = ("contract","period")
+        unique_together = ("contract", "period")  # mỗi hợp đồng–kỳ chỉ 1 bản ghi
+
+    def __str__(self):
+        return f"{self.contract_id} - {self.period}"
+
