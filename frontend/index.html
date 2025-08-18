@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>3H Rental - Trang chủ</title>
+    <link rel="stylesheet" href="css/styles.css" />
+    <link rel="stylesheet" href="css/profile.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+  </head>
+  <body>
+    <header id="navbar"></header>
+    <main class="container">
+      <section class="section">
+        <h2>Danh sách phòng/nhà cho thuê</h2>
+        <form id="searchForm" class="toolbar">
+          <input
+            id="kw"
+            class="input"
+            placeholder="Từ khoá (ví dụ: ban công, 2PN)"
+          />
+          <input
+            id="location"
+            class="input"
+            placeholder="Khu vực (ví dụ: Quận 7)"
+          />
+          <input
+            id="priceMin"
+            class="input"
+            type="number"
+            placeholder="Giá tối thiểu"
+          />
+          <input
+            id="priceMax"
+            class="input"
+            type="number"
+            placeholder="Giá tối đa"
+          />
+          <button class="btn" type="submit">Tìm kiếm</button>
+        </form>
+        <div id="room-list" class="grid"></div>
+      </section>
+    </main>
+    <footer>
+      <div class="container">
+        <small>© 2025 3H Rental. Made with vanilla JS.</small>
+        <small
+          >Tip: nhấn <span class="kbd">Alt</span> +
+          <span class="kbd">←</span> để quay lại.</small
+        >
+      </div>
+    </footer>
+    <script src="js/storage.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/main.js"></script>
+    <script src="js/listings.js"></script>
+  </body>
+</html>

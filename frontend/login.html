@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Đăng nhập - 3H Rental</title>
+    <link rel="stylesheet" href="css/styles.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+    <style>
+      .password-field {
+        position: relative;
+      }
+      .toggle-password {
+        position: absolute;
+        right: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+        cursor: pointer;
+        color: #666;
+      }
+      .toggle-password:hover {
+        color: #333;
+      }
+    </style>
+  </head>
+  <body>
+    <header id="navbar"></header>
+    <main class="container">
+      <section class="section" style="max-width: 520px; margin: 2rem auto">
+        <h2>Đăng nhập</h2>
+        <form id="loginForm">
+          <label>Email</label
+          ><input class="input" type="email" id="email" required />
+          <label>Mật khẩu</label>
+          <div class="password-field">
+            <input class="input" type="password" id="password" required />
+            <i class="toggle-password fas fa-eye" onclick="togglePassword('password')"></i>
+          </div>
+          <button class="btn" type="submit">Đăng nhập</button>
+          <p class="help">
+            Tài khoản seed: <code>admin@example.com / Admin12345!</code> hoặc
+            <code>huy@example.com / Huy12345!</code>
+          </p>
+          <p>Bạn chưa có tài khoản? <a href="register.html">Đăng ký</a></p>
+        </form>
+      </section>
+    </main>
+    <script src="js/storage.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/main.js"></script>
+    <script>
+      function togglePassword(inputId) {
+        const input = document.getElementById(inputId);
+        const icon = input.nextElementSibling;
+        
+        if (input.type === 'password') {
+          input.type = 'text';
+          icon.classList.remove('fa-eye');
+          icon.classList.add('fa-eye-slash');
+        } else {
+          input.type = 'password';
+          icon.classList.remove('fa-eye-slash');
+          icon.classList.add('fa-eye');
+        }
+      }
+    </script>
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        const next =
+          new URL(location.href).searchParams.get("next") || "index.html";
+        qs("#loginForm").addEventListener("submit", async (e) => {
+          e.preventDefault();
+          try {
+            const result = await login(
+              qs("#email").value,
+              qs("#password").value
+            );
+            console.log("Login completed:", result);
+            window.location.href = next;
+          } catch (err) {
+            console.error("Form submission error:", err);
+            alert(err.message);
+          }
+        });
+      });
+    </script>
+  </body>
+</html>

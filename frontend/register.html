@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Đăng ký - 3H Rental</title>
+    <link rel="stylesheet" href="css/styles.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+    <style>
+      .error-message {
+        color: #dc3545;
+        font-size: 0.875rem;
+        margin-top: 0.25rem;
+        margin-bottom: 0.5rem;
+      }
+      .input.error {
+        border-color: #dc3545;
+      }
+      .input.error:focus {
+        box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
+      }
+      .password-field {
+        position: relative;
+      }
+      .toggle-password {
+        position: absolute;
+        right: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+        cursor: pointer;
+        color: #666;
+      }
+      .toggle-password:hover {
+        color: #333;
+      }
+    </style>
+  </head>
+  <body>
+    <header id="navbar"></header>
+    <main class="container">
+      <section class="section" style="max-width: 520px; margin: 2rem auto">
+        <h2>Đăng ký</h2>
+        <form id="registerForm">
+          <label>Họ và tên</label>
+          <input class="input" id="fullName" required />
+          <div id="fullNameError" class="error-message"></div>
+          
+          <label>Email</label>
+          <input class="input" type="email" id="email" required />
+          <div id="emailError" class="error-message"></div>
+          
+          <label>Mật khẩu</label>
+          <div class="password-field">
+            <input class="input" type="password" id="password" required />
+            <i class="toggle-password fas fa-eye" onclick="togglePassword('password')"></i>
+          </div>
+          <div id="passwordError" class="error-message"></div>
+          
+          <label>Xác nhận mật khẩu</label>
+          <div class="password-field">
+            <input class="input" type="password" id="passwordConfirm" required />
+            <i class="toggle-password fas fa-eye" onclick="togglePassword('passwordConfirm')"></i>
+          </div>
+          <div id="passwordConfirmError" class="error-message"></div>
+          
+          <button class="btn" type="submit">Tạo tài khoản</button>
+          <p>Đã có tài khoản? <a href="login.html">Đăng nhập</a></p>
+        </form>
+      </section>
+    </main>
+    <script src="js/storage.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/main.js"></script>
+    <script>
+      function togglePassword(inputId) {
+        const input = document.getElementById(inputId);
+        const icon = input.nextElementSibling;
+        
+        if (input.type === 'password') {
+          input.type = 'text';
+          icon.classList.remove('fa-eye');
+          icon.classList.add('fa-eye-slash');
+        } else {
+          input.type = 'password';
+          icon.classList.remove('fa-eye-slash');
+          icon.classList.add('fa-eye');
+        }
+      }
+    </script>
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        // Hàm helper để hiển thị lỗi
+        function showError(fieldId, message) {
+          const field = qs(`#${fieldId}`);
+          const errorDiv = qs(`#${fieldId}Error`);
+          field.classList.add('error');
+          errorDiv.textContent = message;
+        }
+
+        // Hàm helper để xóa lỗi
+        function clearErrors() {
+          document.querySelectorAll('.error-message').forEach(div => div.textContent = '');
+          document.querySelectorAll('.input').forEach(input => input.classList.remove('error'));
+        }
+
+        qs("#registerForm").addEventListener("submit", async (e) => {
+          e.preventDefault();
+          clearErrors();
+
+          try {
+            const password = qs("#password").value;
+            const passwordConfirm = qs("#passwordConfirm").value;
+            
+            // Kiểm tra mật khẩu khớp nhau
+            if (password !== passwordConfirm) {
+              showError('passwordConfirm', "Mật khẩu xác nhận không khớp!");
+              return;
+            }
+
+            const registerData = {
+              fullName: qs("#fullName").value,
+              email: qs("#email").value,
+              password: password,
+              passwordConfirm: passwordConfirm
+            };
+
+            console.log('Attempting to register with:', {
+              ...registerData,
+              password: '[HIDDEN]',
+              passwordConfirm: '[HIDDEN]'
+            });
+
+            // Disable nút submit trong khi đang xử lý
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Đang xử lý...';
+
+            const result = await register(registerData);
+            console.log('Registration successful:', result);
+            
+            // Hiển thị thông báo thành công và reset form
+            alert('Đăng ký thành công! Vui lòng đăng nhập.');
+            window.location.href = 'login.html';
+            
+          } catch (err) {
+            console.error('Registration error:', err);
+            
+            // Xử lý các loại lỗi khác nhau
+            if (err.message.includes('Email này đã được đăng ký')) {
+              showError('email', err.message);
+            } else if (err.message.includes('mật khẩu')) {
+              showError('password', err.message);
+            } else {
+              alert(err.message);
+            }
+          } finally {
+            // Re-enable nút submit
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Tạo tài khoản';
+          }
+        });
+      });
+    </script>
+  </body>
+</html>

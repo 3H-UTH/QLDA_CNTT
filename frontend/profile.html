@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Thông tin cá nhân - 3H Rental</title>
+    <link rel="stylesheet" href="css/styles.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+  </head>
+  <body>
+    <header id="navbar"></header>
+    <main class="container">
+      <section class="section" style="max-width: 520px; margin: 2rem auto">
+        <h2>Thông tin cá nhân</h2>
+        <form id="profileForm">
+          <label>Họ và tên</label>
+          <input class="input" id="fullName" required />
+          
+          <label>Email</label>
+          <input class="input" type="email" id="email" readonly />
+          
+          <label>Số điện thoại</label>
+          <input class="input" id="phone" type="tel" />
+          
+          <button class="btn" type="submit">Cập nhật thông tin</button>
+        </form>
+      </section>
+    </main>
+    <script src="js/storage.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/main.js"></script>
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        // Kiểm tra đăng nhập
+        const user = requireAuth();
+        if (!user) return;
+
+        // Điền thông tin hiện tại
+        qs("#fullName").value = user.fullName || '';
+        qs("#email").value = user.email || '';
+        qs("#phone").value = user.phone || '';
+
+        qs("#profileForm").addEventListener("submit", async (e) => {
+          e.preventDefault();
+          try {
+            const updatedData = {
+              full_name: qs("#fullName").value,
+              phone: qs("#phone").value
+            };
+
+            const response = await fetch("http://localhost:8000/api/user/profile/", {
+              method: "PATCH",
+              headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${localStorage.getItem('accessToken')}`
+              },
+              body: JSON.stringify(updatedData)
+            });
+
+            if (!response.ok) {
+              const error = await response.json();
+              throw new Error(error.detail || "Không thể cập nhật thông tin");
+            }
+
+            const result = await response.json();
+            console.log('Profile updated:', result);
+
+            // Cập nhật session
+            const currentSession = db.getSession();
+            db.setSession({
+              ...currentSession,
+              fullName: updatedData.full_name,
+              phone: updatedData.phone
+            });
+
+            alert("Cập nhật thông tin thành công!");
+          } catch (err) {
+            console.error('Update failed:', err);
+            alert(err.message);
+          }
+        });
+      });
+    </script>
+  </body>
+</html>

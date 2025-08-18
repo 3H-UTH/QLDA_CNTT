@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Dashboard - Người thuê</title>
+    <link rel="stylesheet" href="css/styles.css" />
+  </head>
+  <body>
+    <header id="navbar"></header>
+    <main class="container">
+      <section class="section">
+        <h2>Yêu cầu thuê của tôi</h2>
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Phòng/Nhà</th>
+              <th>Lời nhắn</th>
+              <th>Gửi lúc</th>
+              <th>Trạng thái</th>
+              <th>Hành động</th>
+            </tr>
+          </thead>
+          <tbody id="req-tbody"></tbody>
+        </table>
+      </section>
+      <section class="section">
+        <h2>Hợp đồng của tôi</h2>
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Phòng/Nhà</th>
+              <th>Giá thuê/tháng</th>
+              <th>Thời gian</th>
+              <th>Trạng thái</th>
+              <th>Liên kết</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="contract-tbody"></tbody>
+        </table>
+      </section>
+      <section class="section">
+        <h2>Hồ sơ cá nhân</h2>
+        <form id="profileForm" style="max-width: 520px">
+          <label>Họ và tên</label><input class="input" id="fullName" />
+          <label>Điện thoại</label><input class="input" id="phone" />
+          <label>Email (không thể đổi trong demo)</label
+          ><input class="input" id="email" disabled />
+          <button class="btn" type="submit">Lưu</button>
+        </form>
+      </section>
+    </main>
+    <script src="js/storage.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/main.js"></script>
+    <script src="js/tenant.js"></script>
+  </body>
+</html>

@@ -1,0 +1,240 @@
+/* styles.css - base styles for the rental app (vanilla, responsive) */
+:root {
+  --bg: #6579a1;
+  --card: #111827;
+  --muted: #94a3b8;
+  --text: #e5e7eb;
+  --primary: #22c55e;
+  --primary-600: #16a34a;
+  --danger: #ef4444;
+  --warning: #f59e0b;
+  --accent: #38bdf8;
+  --border: #1f2937;
+}
+
+* {
+  box-sizing: border-box
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, sans-serif
+}
+
+a {
+  color: var(--accent);
+  text-decoration: none
+}
+
+a:hover {
+  text-decoration: underline
+}
+
+.container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 1rem
+}
+
+header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: rgba(17, 24, 39, .7);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--border)
+}
+
+.nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .75rem
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: .5rem
+}
+
+.brand img {
+  width: 28px;
+  height: 28px
+}
+
+.brand h1 {
+  font-size: 1.1rem;
+  margin: 0
+}
+
+.nav a.btn,
+button.btn {
+  display: inline-block;
+  background: var(--primary);
+  color: #03120a;
+  border: none;
+  padding: .55rem .9rem;
+  border-radius: .6rem;
+  font-weight: 600
+}
+
+.nav a.btn.secondary,
+.btn.secondary {
+  background: #0b1220;
+  color: var(--text);
+  border: 1px solid var(--border)
+}
+
+.nav a.btn:hover,
+button.btn:hover {
+  background: var(--primary-600);
+  cursor: pointer
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem
+}
+
+@media(max-width:960px) {
+  .grid {
+    grid-template-columns: repeat(2, 1fr)
+  }
+}
+
+@media(max-width:640px) {
+  .grid {
+    grid-template-columns: 1fr
+  }
+}
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: .9rem;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column
+}
+
+.card img {
+  width: 100%;
+  height: 180px;
+  object-fit: cover;
+  background: #020617
+}
+
+.card .body {
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: .4rem
+}
+
+.badge {
+  display: inline-block;
+  border: 1px solid var(--border);
+  padding: .15rem .5rem;
+  border-radius: .5rem;
+  font-size: .75rem;
+  color: var(--muted)
+}
+
+form {
+  display: grid;
+  gap: .6rem
+}
+
+.input,
+select,
+textarea {
+  width: 100%;
+  padding: .65rem .75rem;
+  border-radius: .6rem;
+  border: 1px solid var(--border);
+  background: #0b1220;
+  color: var(--text)
+}
+
+label {
+  font-size: .9rem;
+  color: var(--muted)
+}
+
+fieldset {
+  border: 1px dashed var(--border);
+  border-radius: .8rem;
+  padding: 1rem
+}
+
+fieldset legend {
+  color: var(--muted)
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse
+}
+
+.table th,
+.table td {
+  border-bottom: 1px solid var(--border);
+  padding: .6rem;
+  text-align: left
+}
+
+.table th {
+  color: var(--muted);
+  font-weight: 600
+}
+
+.table tr:hover {
+  background: #0b1220
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .6rem;
+  margin: .8rem 0
+}
+
+.toolbar .input {
+  max-width: 240px
+}
+
+.section {
+  margin: 1.2rem 0
+}
+
+.help {
+  color: var(--muted);
+  font-size: .9rem
+}
+
+.kbd {
+  border: 1px solid var(--border);
+  padding: .1rem .35rem;
+  border-radius: .3rem;
+  background: #0b1220;
+  color: var(--muted)
+}
+
+footer {
+  margin-top: 2rem;
+  border-top: 1px solid var(--border);
+  color: var(--muted)
+}
+
+footer .container {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem
+}
