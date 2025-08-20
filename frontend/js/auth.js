@@ -1,5 +1,5 @@
 function currentUser() {
-  return db.getSession();
+  return api.getSession();
 }
 function requireAuth(roles = null) {
   const u = currentUser();
@@ -16,42 +16,12 @@ function requireAuth(roles = null) {
 }
 async function login(email, password) {
   try {
-    console.log('Attempting login with:', { email, password });
+    console.log('Attempting login with:', { email });
     
-    // Gọi API đăng nhập backend
-    const res = await fetch("http://localhost:8000/api/auth/login/", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        username: email,
-        password: password,
-      }),
-    });
-
-    console.log('API Response status:', res.status);
+    // Use the new API client for login
+    const data = await api.login(email, password);
     
-    if (!res.ok) {
-      const errorData = await res.json();
-      console.error('Login error:', errorData);
-      throw new Error(errorData.detail || "Email hoặc mật khẩu không đúng");
-    }
-
-    const data = await res.json();
     console.log('Login successful:', data);
-
-    // Lưu token vào localStorage
-    localStorage.setItem('accessToken', data.access);
-    localStorage.setItem('refreshToken', data.refresh);
-
-    // Lưu thông tin session
-    db.setSession({
-      access: data.access,
-      refresh: data.refresh,
-      email: email,
-    });
-
     return data;
   } catch (error) {
     console.error('Login failed:', error);
@@ -59,43 +29,21 @@ async function login(email, password) {
   }
 }
 function logout() {
-  db.clearSession();
+  api.clearSession();
   window.location.href = "index.html";
 }
 async function register({ fullName, email, password, passwordConfirm }) {
   try {
     console.log('Attempting register with:', { email, fullName });
 
-    // Gọi API đăng ký backend
-    const res = await fetch("http://localhost:8000/api/auth/register/", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        email: email,
-        full_name: fullName,
-        role: "OWNER",
-        password: password,
-        password_confirm: passwordConfirm
-      }),
+    // Use the new API client for registration
+    await api.register({
+      email: email,
+      full_name: fullName,
+      role: "TENANT",
+      password: password,
+      password_confirm: passwordConfirm
     });
-
-    console.log('API Response status:', res.status);
-    
-    if (!res.ok) {
-      const errorData = await res.json();
-      console.error('Register error:', errorData);
-      
-      // Kiểm tra lỗi email đã tồn tại
-      if (errorData.email && errorData.email.includes('already exists')) {
-        throw new Error("Email này đã được đăng ký! Vui lòng sử dụng email khác.");
-      }
-      if (errorData.email) {
-        throw new Error(errorData.email[0]);
-      }
-      throw new Error(errorData.detail || "Đăng ký không thành công");
-    }
 
     console.log('Registration successful');
     
@@ -104,6 +52,12 @@ async function register({ fullName, email, password, passwordConfirm }) {
     
   } catch (error) {
     console.error('Registration failed:', error);
+    
+    // Handle specific error messages
+    if (error.message.includes('already exists')) {
+      throw new Error("Email này đã được đăng ký! Vui lòng sử dụng email khác.");
+    }
+    
     throw error;
   }
 }
