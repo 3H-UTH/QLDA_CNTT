@@ -19,10 +19,21 @@ class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, required=True)
     password_confirm = serializers.CharField(write_only=True, required=True)
     full_name = serializers.CharField(required=True, min_length=2)
+    username = serializers.CharField(required=True, min_length=3)
 
     class Meta:
         model = User
-        fields = ["email", "full_name", "role", "password", "password_confirm"]
+        fields = ["username", "email", "full_name", "role", "password", "password_confirm"]
+
+    def validate_username(self, value):
+        if User.objects.filter(username=value).exists():
+            raise serializers.ValidationError("Tên người dùng đã được sử dụng.")
+        
+        # Validate username format (only letters, numbers, underscore)
+        import re
+        if not re.match(r'^[a-zA-Z0-9_]+$', value):
+            raise serializers.ValidationError("Tên người dùng chỉ được chứa chữ cái, số và dấu gạch dưới.")
+        return value
 
     def validate_full_name(self, value):
         if not value.strip():
@@ -46,33 +57,38 @@ class RegisterSerializer(serializers.ModelSerializer):
         validated_data.pop("password_confirm")
         password = validated_data.pop("password")
         user = User(**validated_data)
-        user.username = user.email  # nếu dùng AbstractUser
+        # Không ghi đè username nữa, giữ nguyên username từ frontend
         user.set_password(password)
         user.save()
         return user
 
 # ====== Auth (login/refresh) ======
-class EmailTokenObtainPairSerializer(TokenObtainPairSerializer):
+class UsernameTokenObtainPairSerializer(TokenObtainPairSerializer):
+    username_field = 'username'  # Sử dụng username thay vì email
+    
     @classmethod
     def get_token(cls, user):
         return super().get_token(user)
     
     def validate(self, attrs):
-        # Check if 'email' is provided instead of 'username'
-        if 'email' in attrs and 'username' not in attrs:
-            email = attrs.get('email')
-            try:
-                user = User.objects.get(email=email)
-                attrs['username'] = user.username
-                del attrs['email']  # Remove email after getting username
-            except User.DoesNotExist:
-                pass  # Let parent handle the error
+        # Đăng nhập bằng username và password
+        data = super().validate(attrs)
         
-        return super().validate(attrs)
+        # Thêm thông tin user vào response
+        data.update({
+            'user': {
+                'id': self.user.id,
+                'username': self.user.username,
+                'email': self.user.email,
+                'full_name': self.user.full_name,
+                'role': self.user.role,
+            }
+        })
+        return data
 
 @extend_schema(tags=["Auth"])
-class EmailTokenObtainPairView(TokenObtainPairView):
-    serializer_class = EmailTokenObtainPairSerializer
+class UsernameTokenObtainPairView(TokenObtainPairView):
+    serializer_class = UsernameTokenObtainPairSerializer
 
 @extend_schema(tags=["Auth"])
 class RefreshTokenView(TokenRefreshView):
@@ -92,6 +108,7 @@ class RegisterView(APIView):
         return Response({
             "user": {
                 "id": user.id,
+                "username": user.username,
                 "email": user.email,
                 "full_name": user.full_name,
                 "role": user.role,

@@ -1,349 +1,307 @@
-// API configuration for connecting to Django backend
-const API_BASE_URL = 'http://localhost:8000/api';
+// API Client for 3H Rental
+class RentalAPI {
+  constructor() {
+    // Use same origin to avoid CORS issues
+    this.baseURL = 'http://127.0.0.1:8000/api';
+    this.token = localStorage.getItem('access_token');
+    this.refreshToken = localStorage.getItem('refresh_token');
+  }
 
-// API utility functions
-const api = {
-  // Generic API call function with token refresh
-  async call(endpoint, options = {}) {
-    const url = `${API_BASE_URL}${endpoint}`;
+  // Helper method to make API calls
+  async request(endpoint, options = {}) {
+    const url = `${this.baseURL}${endpoint}`;
     const config = {
       headers: {
         'Content-Type': 'application/json',
+        ...options.headers,
       },
       ...options,
     };
 
-    // Add authorization token if available
-    const session = this.getSession();
-    if (session && session.access) {
-      config.headers.Authorization = `Bearer ${session.access}`;
+    // Add auth token if available
+    if (this.token) {
+      config.headers['Authorization'] = `Bearer ${this.token}`;
     }
 
     try {
       const response = await fetch(url, config);
       
-      // If unauthorized, try to refresh token
-      if (response.status === 401 && session && session.refresh) {
-        console.log('Token expired, attempting refresh...');
-        try {
-          await this.refreshToken();
-          // Retry the original request with new token
-          const newSession = this.getSession();
-          if (newSession && newSession.access) {
-            config.headers.Authorization = `Bearer ${newSession.access}`;
-            const retryResponse = await fetch(url, config);
-            if (!retryResponse.ok) {
-              throw new Error(`HTTP error! status: ${retryResponse.status}`);
-            }
-            return await retryResponse.json();
-          }
-        } catch (refreshError) {
-          console.error('Token refresh failed:', refreshError);
-          // Clear invalid session and redirect to login
-          this.clearSession();
-          window.location.href = 'login.html';
-          throw new Error('Session expired. Please login again.');
-        }
+      // Handle 401 - try refresh token
+      if (response.status === 401 && this.refreshToken) {
+        await this.refreshAccessToken();
+        // Retry with new token
+        config.headers['Authorization'] = `Bearer ${this.token}`;
+        const retryResponse = await fetch(url, config);
+        return await this.handleResponse(retryResponse);
       }
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
-      }
-      
-      const data = await response.json();
-      return data;
+
+      return await this.handleResponse(response);
     } catch (error) {
-      console.error(`API call failed for ${endpoint}:`, error);
+      console.error('API request failed:', error);
       throw error;
     }
-  },
+  }
 
-  // Refresh token function
-  async refreshToken() {
-    const session = this.getSession();
-    if (!session || !session.refresh) {
-      throw new Error('No refresh token available');
+  async handleResponse(response) {
+    const contentType = response.headers.get('content-type');
+    let data;
+
+    if (contentType && contentType.includes('application/json')) {
+      data = await response.json();
+    } else {
+      data = await response.text();
     }
 
-    const response = await fetch(`${API_BASE_URL}/auth/refresh/`, {
+    if (!response.ok) {
+      console.error('API Error:', response.status, data);
+      // Handle validation errors more specifically
+      if (response.status === 400 && data) {
+        if (typeof data === 'object') {
+          // If it's a validation error object, format it nicely
+          const errorMessages = [];
+          Object.keys(data).forEach(field => {
+            if (Array.isArray(data[field])) {
+              errorMessages.push(`${field}: ${data[field].join(', ')}`);
+            } else {
+              errorMessages.push(`${field}: ${data[field]}`);
+            }
+          });
+          throw new Error(errorMessages.join('\n'));
+        }
+      }
+      throw new Error(data.detail || data.message || `HTTP error! status: ${response.status}`);
+    }
+
+    return data;
+  }
+
+  // Auth methods
+  async login(username, password) {
+    const data = await this.request('/auth/login/', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        refresh: session.refresh
+      body: JSON.stringify({ 
+        username,
+        password 
       }),
     });
 
-    if (!response.ok) {
-      throw new Error('Token refresh failed');
+    console.log('Login API response:', data);
+
+    this.token = data.access;
+    this.refreshToken = data.refresh;
+    
+    localStorage.setItem('access_token', this.token);
+    localStorage.setItem('refresh_token', this.refreshToken);
+    
+    // Check if user data exists
+    if (data.user) {
+      console.log('Setting currentUser:', data.user);
+      localStorage.setItem('currentUser', JSON.stringify(data.user));
+    } else {
+      console.error('No user data in login response:', data);
     }
 
-    const data = await response.json();
-    
-    // Update session with new access token
-    const updatedSession = {
-      ...session,
-      access: data.access
-    };
-    
-    this.setSession(updatedSession);
-    localStorage.setItem('accessToken', data.access);
-    
     return data;
-  },
+  }
 
-  // Room-related API calls
-  async getRooms() {
+  async refreshAccessToken() {
     try {
-      const data = await this.call('/rooms/');
-      return data.results || data;
-    } catch (error) {
-      console.error('Failed to fetch rooms from API:', error);
-      return [];
-    }
-  },
-
-  async getRoom(id) {
-    try {
-      return await this.call(`/rooms/${id}/`);
-    } catch (error) {
-      console.error(`Failed to fetch room ${id}:`, error);
-      return null;
-    }
-  },
-
-  async createRoom(roomData) {
-    try {
-      return await this.call('/rooms/', {
+      const data = await this.request('/auth/refresh/', {
         method: 'POST',
-        body: JSON.stringify(roomData),
-      });
-    } catch (error) {
-      console.error('Failed to create room:', error);
-      throw error;
-    }
-  },
-
-  async createRoomWithFile(formData) {
-    try {
-      const session = this.getSession();
-      const response = await fetch(`${API_BASE_URL}/rooms/`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${session.access}`
-        },
-        body: formData // Don't set Content-Type for FormData - browser will set it automatically
+        body: JSON.stringify({ refresh: this.refreshToken }),
       });
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
-      }
-
-      return await response.json();
+      this.token = data.access;
+      localStorage.setItem('access_token', this.token);
+      return data;
     } catch (error) {
-      console.error('Failed to create room with file:', error);
+      console.error('Failed to refresh token:', error);
+      // Clear session if refresh fails
+      this.clearSession();
       throw error;
     }
-  },
-
-  async updateRoom(id, roomData) {
-    try {
-      return await this.call(`/rooms/${id}/`, {
-        method: 'PUT',
-        body: JSON.stringify(roomData),
-      });
-    } catch (error) {
-      console.error(`Failed to update room ${id}:`, error);
-      throw error;
-    }
-  },
-
-  async updateRoomWithFile(id, formData) {
-    try {
-      const session = this.getSession();
-      const response = await fetch(`${API_BASE_URL}/rooms/${id}/`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${session.access}`
-        },
-        body: formData // Don't set Content-Type for FormData
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
-      }
-
-      return await response.json();
-    } catch (error) {
-      console.error(`Failed to update room ${id} with file:`, error);
-      throw error;
-    }
-  },
-
-  async deleteRoom(id) {
-    try {
-      return await this.call(`/rooms/${id}/`, {
-        method: 'DELETE',
-      });
-    } catch (error) {
-      console.error(`Failed to delete room ${id}:`, error);
-      throw error;
-    }
-  },
-
-  // Contract-related API calls
-  async getContracts() {
-    try {
-      const data = await this.call('/contracts/');
-      return data.results || data;
-    } catch (error) {
-      console.error('Failed to fetch contracts:', error);
-      return [];
-    }
-  },
-
-  // Authentication API calls
-  async login(email, password) {
-    try {
-      const response = await this.call('/auth/login/', {
-        method: 'POST',
-        body: JSON.stringify({ 
-          username: email,  // Send username field (which is email in our case)
-          password: password 
-        }),
-      });
-      
-      if (response.access) {
-        // Store tokens in localStorage for compatibility
-        localStorage.setItem('accessToken', response.access);
-        localStorage.setItem('refreshToken', response.refresh);
-        
-        // Store session data with user info
-        this.setSession({
-          access: response.access,
-          refresh: response.refresh,
-          email: response.user.email,
-          fullName: response.user.full_name,
-          role: response.user.role,
-          id: response.user.id,
-        });
-      }
-      
-      return response;
-    } catch (error) {
-      console.error('Login failed:', error);
-      throw error;
-    }
-  },
+  }
 
   async register(userData) {
-    try {
-      return await this.call('/auth/register/', {
-        method: 'POST',
-        body: JSON.stringify(userData),
-      });
-    } catch (error) {
-      console.error('Registration failed:', error);
-      throw error;
+    const data = await this.request('/auth/register/', {
+      method: 'POST',
+      body: JSON.stringify({
+        email: userData.email,
+        username: userData.username,
+        password: userData.password,
+        password_confirm: userData.passwordConfirm,  // Map passwordConfirm -> password_confirm
+        full_name: userData.fullName,                // Map fullName -> full_name
+        role: 'TENANT' // Mặc định role là TENANT
+      }),
+    });
+    
+    // Store tokens if provided
+    if (data.access) {
+      this.token = data.access;
+      this.refreshToken = data.refresh;
+      localStorage.setItem('access_token', this.token);
+      localStorage.setItem('refresh_token', this.refreshToken);
     }
-  },
+    
+    // Store user data
+    if (data.user) {
+      localStorage.setItem('currentUser', JSON.stringify(data.user));
+    }
+    
+    return data;
+  }
 
   // Session management
   getSession() {
     try {
-      return JSON.parse(localStorage.getItem('rf_session') || 'null');
-    } catch {
+      const userData = localStorage.getItem('currentUser');
+      console.log('getSession - raw userData:', userData);
+      const result = userData ? JSON.parse(userData) : null;
+      console.log('getSession - parsed result:', result);
+      return result;
+    } catch (error) {
+      console.error('Error parsing user data:', error);
       return null;
     }
-  },
-
-  setSession(sessionData) {
-    localStorage.setItem('rf_session', JSON.stringify(sessionData));
-  },
+  }
 
   clearSession() {
-    localStorage.removeItem('rf_session');
-  },
+    this.token = null;
+    this.refreshToken = null;
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
+    localStorage.removeItem('currentUser');
+  }
 
-  // Check if user is authenticated
-  isAuthenticated() {
-    const session = this.getSession();
-    return session && session.access;
-  },
+  // Room methods
+  async getRooms() {
+    return await this.request('/rooms/');
+  }
 
-  // Format currency (Vietnamese Dong)
-  formatVND(amount) {
-    return new Intl.NumberFormat('vi-VN', {
-      style: 'currency',
-      currency: 'VND',
-    }).format(amount);
-  },
-};
+  async getRoom(id) {
+    return await this.request(`/rooms/${id}/`);
+  }
 
-// Backward compatibility functions (if any old code still uses these)
-function getRooms() {
-  console.warn('getRooms() is deprecated. Use api.getRooms() instead.');
-  return api.getRooms();
-}
+  async createRoom(roomData) {
+    return await this.request('/rooms/', {
+      method: 'POST',
+      body: JSON.stringify(roomData),
+    });
+  }
 
-function getUsers() {
-  console.warn('getUsers() is deprecated. Using localStorage fallback.');
-  try {
-    return JSON.parse(localStorage.getItem('rf_users') || '[]');
-  } catch {
-    return [];
+  async updateRoom(id, roomData) {
+    return await this.request(`/rooms/${id}/`, {
+      method: 'PUT',
+      body: JSON.stringify(roomData),
+    });
+  }
+
+  async deleteRoom(id) {
+    return await this.request(`/rooms/${id}/`, {
+      method: 'DELETE',
+    });
+  }
+
+  // Room methods with file upload support
+  async createRoomWithFile(formData) {
+    const url = `${this.baseURL}/rooms/`;
+    const config = {
+      method: 'POST',
+      body: formData, // Don't set Content-Type for FormData
+    };
+
+    // Add auth token if available
+    if (this.token) {
+      config.headers = {
+        'Authorization': `Bearer ${this.token}`,
+      };
+    }
+
+    try {
+      const response = await fetch(url, config);
+      
+      // Handle 401 - try refresh token
+      if (response.status === 401 && this.refreshToken) {
+        await this.refreshAccessToken();
+        // Retry with new token
+        config.headers['Authorization'] = `Bearer ${this.token}`;
+        const retryResponse = await fetch(url, config);
+        return await this.handleResponse(retryResponse);
+      }
+
+      return await this.handleResponse(response);
+    } catch (error) {
+      console.error('API request failed:', error);
+      throw error;
+    }
+  }
+
+  async updateRoomWithFile(id, formData) {
+    const url = `${this.baseURL}/rooms/${id}/`;
+    const config = {
+      method: 'PUT',
+      body: formData, // Don't set Content-Type for FormData
+    };
+
+    // Add auth token if available
+    if (this.token) {
+      config.headers = {
+        'Authorization': `Bearer ${this.token}`,
+      };
+    }
+
+    try {
+      const response = await fetch(url, config);
+      
+      // Handle 401 - try refresh token
+      if (response.status === 401 && this.refreshToken) {
+        await this.refreshAccessToken();
+        // Retry with new token
+        config.headers['Authorization'] = `Bearer ${this.token}`;
+        const retryResponse = await fetch(url, config);
+        return await this.handleResponse(retryResponse);
+      }
+
+      return await this.handleResponse(response);
+    } catch (error) {
+      console.error('API request failed:', error);
+      throw error;
+    }
+  }
+
+  // Contract methods
+  async getContracts() {
+    return await this.request('/contracts/');
+  }
+
+  async getContract(id) {
+    return await this.request(`/contracts/${id}/`);
+  }
+
+  async createContract(contractData) {
+    return await this.request('/contracts/', {
+      method: 'POST',
+      body: JSON.stringify(contractData),
+    });
+  }
+
+  // Meter reading methods
+  async getMeterReadings() {
+    return await this.request('/meter-readings/');
+  }
+
+  async createMeterReading(readingData) {
+    return await this.request('/meter-readings/', {
+      method: 'POST',
+      body: JSON.stringify(readingData),
+    });
   }
 }
 
-function setUsers(users) {
-  console.warn('setUsers() is deprecated. Using localStorage fallback.');
-  localStorage.setItem('rf_users', JSON.stringify(users));
-}
+// Create global API instance
+window.api = new RentalAPI();
 
-function getContracts() {
-  console.warn('getContracts() is deprecated. Use api.getContracts() instead.');
-  return api.getContracts();
-}
-
-function setContracts(contracts) {
-  console.warn('setContracts() is deprecated. Using localStorage fallback.');
-  localStorage.setItem('rf_contracts', JSON.stringify(contracts));
-}
-
-function getRequests() {
-  console.warn('getRequests() is deprecated. Using localStorage fallback.');
-  try {
-    return JSON.parse(localStorage.getItem('rf_requests') || '[]');
-  } catch {
-    return [];
-  }
-}
-
-function setRequests(requests) {
-  console.warn('setRequests() is deprecated. Using localStorage fallback.');
-  localStorage.setItem('rf_requests', JSON.stringify(requests));
-}
-
-function getSession() {
-  console.warn('getSession() is deprecated. Use api.getSession() instead.');
-  return api.getSession();
-}
-
-function setSession(session) {
-  console.warn('setSession() is deprecated. Use api.setSession() instead.');
-  return api.setSession(session);
-}
-
-function clearSession() {
-  console.warn('clearSession() is deprecated. Use api.clearSession() instead.');
-  return api.clearSession();
-}
-
-// Export for ES6 modules (if needed)
+// Export for modules
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = api;
+  module.exports = RentalAPI;
 }

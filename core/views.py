@@ -23,7 +23,6 @@ class RoomViewSet(viewsets.ModelViewSet):
     permission_classes = [IsOwnerRole]
 
     filter_backends = [DjangoFilterBackend, filters.OrderingFilter, filters.SearchFilter]
-    filterset_fields = ["status", "building"]          
     search_fields = ["name"]                          
     ordering_fields = ["id", "area_m2", "base_price", "name"]  
 

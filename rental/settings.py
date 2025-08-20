@@ -53,6 +53,8 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:8000",
     "https://your-frontend-domain.com",
     "http://localhost:5173",
+    "http://127.0.0.1:5500",
+    "http://localhost:5500",
     "https://k9z2h1t3-5173.asse.devtunnels.ms",
 ]
 
@@ -195,6 +197,14 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = 'static/'
+STATICFILES_DIRS = [
+    BASE_DIR / 'frontend',
+]
+
+# Media files (user uploads)
+import os
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field

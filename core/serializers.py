@@ -3,9 +3,26 @@ from .models import Room, Contract, MeterReading
 from drf_spectacular.utils import extend_schema_field
 
 class RoomSerializer(serializers.ModelSerializer):
+    image = serializers.ImageField(required=False, allow_null=True)
+    
     class Meta:
         model = Room
         fields = "__all__"
+        
+    def validate_bedrooms(self, value):
+        if value < 1:
+            raise serializers.ValidationError("Số phòng ngủ phải ít nhất là 1")
+        return value
+        
+    def validate_bathrooms(self, value):
+        if value < 1:
+            raise serializers.ValidationError("Số phòng tắm phải ít nhất là 1")
+        return value
+        
+    def validate_base_price(self, value):
+        if value <= 0:
+            raise serializers.ValidationError("Giá thuê phải lớn hơn 0")
+        return value
 
 class ContractCreateSerializer(serializers.ModelSerializer):
     class Meta:

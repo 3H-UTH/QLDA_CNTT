@@ -3,56 +3,260 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>3H Rental - Trang chủ</title>
+    <title>3H Rental - Trang chủ | Cho thuê nhà, phòng trọ cao cấp</title>
+    <meta name="description" content="Nền tảng cho thuê nhà và phòng trọ cao cấp, hiện đại. Tìm kiếm và đặt thuê ngay hôm nay với 3H Rental." />
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Styles -->
     <link rel="stylesheet" href="css/styles.css" />
     <link rel="stylesheet" href="css/profile.css" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
   </head>
   <body>
     <header id="navbar"></header>
+    
     <main class="container">
+      <!-- Hero Section -->
+      <section class="hero-section">
+        <div class="hero-content">
+          <h1>Tìm ngôi nhà mơ ước của bạn</h1>
+          <p>Khám phá hàng nghìn căn hộ và phòng trọ cao cấp với tiện nghi hiện đại, vị trí đắc địa tại thành phố.</p>
+        </div>
+      </section>
+
+      <!-- Search Section -->
       <section class="section">
-        <h2>Danh sách phòng/nhà cho thuê</h2>
         <form id="searchForm" class="toolbar">
-          <input
-            id="kw"
-            class="input"
-            placeholder="Từ khoá (ví dụ: ban công, 2PN)"
-          />
-          <input
-            id="location"
-            class="input"
-            placeholder="Khu vực (ví dụ: Quận 7)"
-          />
-          <input
-            id="priceMin"
-            class="input"
-            type="number"
-            placeholder="Giá tối thiểu"
-          />
-          <input
-            id="priceMax"
-            class="input"
-            type="number"
-            placeholder="Giá tối đa"
-          />
-          <button class="btn" type="submit">Tìm kiếm</button>
+          <div class="search-group">
+            <div class="form-group">
+              <input
+                id="kw"
+                class="input"
+                placeholder="Từ khoá (ví dụ: ban công, 2PN)"
+              />
+            </div>
+            <div class="form-group">
+              <input
+                id="location"
+                class="input"
+                placeholder="Khu vực (ví dụ: Quận 7)"
+              />
+            </div>
+            <div class="form-group">
+              <input
+                id="priceMin"
+                class="input"
+                type="number"
+                placeholder="Giá tối thiểu"
+              />
+            </div>
+            <div class="form-group">
+              <input
+                id="priceMax"
+                class="input"
+                type="number"
+                placeholder="Giá tối đa"
+              />
+            </div>
+            <button class="btn btn-primary" type="submit">
+              <i class="fas fa-search"></i>
+              Tìm kiếm
+            </button>
+          </div>
         </form>
+      </section>
+
+      <!-- Listings Section -->
+      <section class="section">
+        <h2>
+          <i class="fas fa-home"></i>
+          Danh sách phòng/nhà cho thuê
+        </h2>
         <div id="room-list" class="grid"></div>
       </section>
     </main>
+    
     <footer>
       <div class="container">
-        <small>© 2025 3H Rental. Made with vanilla JS.</small>
-        <small
-          >Tip: nhấn <span class="kbd">Alt</span> +
-          <span class="kbd">←</span> để quay lại.</small
-        >
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+          <small>
+            <i class="fas fa-heart" style="color: var(--accent-gold);"></i>
+            © 2025 3H Rental. Made with modern design.
+          </small>
+          <small>
+            Tip: nhấn <span class="kbd">Alt</span> +
+            <span class="kbd">←</span> để quay lại.
+          </small>
+        </div>
       </div>
     </footer>
+
+    <script src="js/listings.js"></script>
+    
+
     <script src="js/storage.js"></script>
     <script src="js/auth.js"></script>
     <script src="js/main.js"></script>
-    <script src="js/listings.js"></script>
+    <script src="js/api.js"></script>
+    <script>
+      console.log('=== INDEX.HTML LOADING ===');
+      
+      // Ensure API instance exists
+      if (typeof api === 'undefined' && typeof RentalAPI !== 'undefined') {
+        console.log('Creating global API instance');
+        window.api = new RentalAPI();
+      }
+      
+      // Manual room loading function
+      async function loadRoomsDirectly() {
+        try {
+          console.log('loadRoomsDirectly: Starting...');
+          const roomList = document.getElementById('room-list');
+          
+          if (!roomList) {
+            console.error('room-list element not found!');
+            return;
+          }
+          
+          roomList.innerHTML = '<div style="text-align: center; padding: 2rem;">Đang tải dữ liệu phòng...</div>';
+          
+          const response = await fetch('http://127.0.0.1:8000/api/rooms/');
+          console.log('API response status:', response.status);
+          
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+          }
+          
+          const data = await response.json();
+          console.log('Rooms data received:', data.results.length, 'rooms');
+          
+          // Clear loading message
+          roomList.innerHTML = '';
+          
+          if (data.results.length === 0) {
+            roomList.innerHTML = `
+              <div class="empty-state" style="grid-column: 1 / -1; text-align: center; padding: 2rem;">
+                <i class="fas fa-home" style="font-size: 3rem; color: #ccc; margin-bottom: 1rem;"></i>
+                <h3>Chưa có phòng nào được đăng</h3>
+                <p>Owner chưa thêm phòng nào vào hệ thống.</p>
+              </div>
+            `;
+            return;
+          }
+          
+          // Render rooms
+          data.results.forEach(room => {
+            const div = document.createElement('div');
+            div.className = 'property-card fade-in';
+            
+            const img = room.image || 'assets/placeholder.svg';
+            const price = parseFloat(room.base_price || 0).toLocaleString('vi-VN') + '₫';
+            
+            div.innerHTML = `
+              <div style="position: relative; overflow: hidden;">
+                <img src="${img}" alt="${room.name}" loading="lazy" style="width: 100%; height: 200px; object-fit: cover;">
+                <div class="badge status-available" style="position: absolute; top: 1rem; right: 1rem; background: #4CAF50; color: white; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem;">
+                  ${room.status === 'EMPTY' ? 'Còn trống' : room.status}
+                </div>
+              </div>
+              <div class="body" style="padding: 1rem;">
+                <div class="price" style="display: flex; align-items: baseline; gap: 0.5rem; margin-bottom: 0.75rem;">
+                  <span style="font-size: 1.75rem; font-weight: 700; color: var(--accent-gold, #f39c12);">
+                    ${price}
+                  </span>
+                  <span style="font-size: 0.875rem; font-weight: 500; color: var(--text-muted, #666);">
+                    /tháng
+                  </span>
+                </div>
+                
+                <h3 class="title" style="font-size: 1.25rem; font-weight: 600; margin-bottom: 0.5rem; color: var(--text-primary, #333);">
+                  ${room.name}
+                </h3>
+                
+                <div class="location" style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem; color: var(--text-muted, #666); font-size: 0.875rem;">
+                  <i class="fas fa-map-marker-alt" style="color: var(--accent-blue, #3498db);"></i>
+                  <span>${room.address}</span>
+                </div>
+                
+                <div class="features" style="display: flex; gap: 0.75rem; margin-bottom: 1rem; flex-wrap: wrap;">
+                  <div class="badge feature-badge" style="display: flex; align-items: center; gap: 0.25rem; background: #f8f9fa; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem;">
+                    <i class="fas fa-bed" style="color: var(--accent-blue, #3498db);"></i>
+                    <span>${room.bedrooms} PN</span>
+                  </div>
+                  <div class="badge feature-badge" style="display: flex; align-items: center; gap: 0.25rem; background: #f8f9fa; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem;">
+                    <i class="fas fa-bath" style="color: var(--accent-blue, #3498db);"></i>
+                    <span>${room.bathrooms} WC</span>
+                  </div>
+                  <div class="badge feature-badge" style="display: flex; align-items: center; gap: 0.25rem; background: #f8f9fa; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem;">
+                    <i class="fas fa-ruler-combined" style="color: var(--accent-blue, #3498db);"></i>
+                    <span>${room.area_m2}m²</span>
+                  </div>
+                </div>
+                
+                <p style="color: var(--text-muted, #666); margin-bottom: 1.5rem; line-height: 1.5; font-size: 0.875rem;">
+                  ${room.detail ? (room.detail.length > 80 ? room.detail.substring(0, 80) + '...' : room.detail) : 'Phòng hiện đại, đầy đủ tiện nghi'}
+                </p>
+                
+                <div class="actions" style="display: flex; gap: 0.75rem;">
+                  <a class="btn btn-primary" href="room.html?id=${room.id}" style="flex: 1; justify-content: center; display: flex; align-items: center; background: var(--primary, #3498db); color: white; padding: 0.75rem; text-decoration: none; border-radius: 4px;">
+                    <i class="fas fa-eye"></i>
+                    Xem chi tiết
+                  </a>
+                  ${room.status === 'EMPTY' ? `
+                    <button class="btn btn-accent" onclick="alert('Vui lòng đăng nhập để thuê phòng')" style="flex: 1; justify-content: center; display: flex; align-items: center; background: var(--accent, #e74c3c); color: white; padding: 0.75rem; border: none; border-radius: 4px; cursor: pointer;">
+                      <i class="fas fa-key"></i>
+                      Thuê ngay
+                    </button>
+                  ` : ''}
+                </div>
+              </div>
+            `;
+            roomList.appendChild(div);
+          });
+          
+          console.log('Rooms rendered successfully');
+          
+        } catch (error) {
+          console.error('Error loading rooms:', error);
+          const roomList = document.getElementById('room-list');
+          if (roomList) {
+            roomList.innerHTML = `<div style="text-align: center; padding: 2rem; color: red;">Lỗi khi tải dữ liệu: ${error.message}</div>`;
+          }
+        }
+      }
+      
+      // Initialize when DOM is ready
+      document.addEventListener('DOMContentLoaded', () => {
+        console.log('DOM loaded, initializing...');
+        
+        // Render navbar
+        if (typeof renderNavbar === 'function') {
+          try {
+            renderNavbar();
+            console.log('Navbar rendered');
+          } catch (error) {
+            console.error('Error rendering navbar:', error);
+          }
+        }
+        
+        // Load rooms
+        loadRoomsDirectly();
+        
+        // Setup search form if exists
+        const searchForm = document.getElementById('searchForm');
+        if (searchForm) {
+          searchForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            console.log('Search form submitted');
+            // For now, just reload rooms (you can add filtering later)
+            loadRoomsDirectly();
+          });
+        }
+      });
+    </script>
   </body>
 </html>

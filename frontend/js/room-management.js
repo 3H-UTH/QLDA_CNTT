@@ -99,14 +99,14 @@ function renderRoomsTable() {
     rooms.forEach(room => {
         const row = document.createElement('tr');
         row.innerHTML = `
-            <td>${room.name}</td>
-            <td>${room.area_m2 || '-'} m²</td>
-            <td>${room.bedrooms || 0}</td>
-            <td>${room.bathrooms || 0}</td>
-            <td>${fmtVND(room.base_price)}</td>
+            <td>${room.name || ''}</td>
+            <td>${room.area_m2 ? room.area_m2 + ' m²' : '-'}</td>
+            <td>${room.bedrooms || 1}</td>
+            <td>${room.bathrooms || 1}</td>
+            <td>${fmtVND(room.base_price || 0)}</td>
             <td>
-                <span class="status-badge status-${room.status.toLowerCase()}">
-                    ${getStatusText(room.status)}
+                <span class="status-badge status-${(room.status || 'empty').toLowerCase()}">
+                    ${getStatusText(room.status || 'EMPTY')}
                 </span>
             </td>
             <td>
@@ -114,7 +114,7 @@ function renderRoomsTable() {
                     <button class="btn btn-sm btn-secondary" onclick="editRoom(${room.id})" title="Sửa">
                         <i class="fas fa-edit"></i>
                     </button>
-                    <button class="btn btn-sm btn-danger" onclick="showDeleteModal(${room.id}, '${room.name}')" title="Xóa">
+                    <button class="btn btn-sm btn-danger" onclick="showDeleteModal(${room.id}, '${(room.name || '').replace(/'/g, "\\'")}' )" title="Xóa">
                         <i class="fas fa-trash"></i>
                     </button>
                 </div>
@@ -147,15 +147,28 @@ function editRoom(roomId) {
     currentEditingRoom = room;
     document.getElementById('modal-title').innerHTML = '<i class="fas fa-edit"></i> Sửa thông tin phòng';
     
-    // Populate form with room data
-    document.getElementById('room-name').value = room.name;
+    // Populate form with room data (with safe defaults)
+    document.getElementById('room-name').value = room.name || '';
     document.getElementById('room-area').value = room.area_m2 || '';
     document.getElementById('room-bedrooms').value = room.bedrooms || 1;
     document.getElementById('room-bathrooms').value = room.bathrooms || 1;
-    document.getElementById('room-price').value = room.base_price;
+    document.getElementById('room-price').value = room.base_price || '';
     document.getElementById('room-address').value = room.address || '';
-    document.getElementById('room-status').value = room.status;
+    document.getElementById('room-status').value = room.status || 'EMPTY';
     document.getElementById('room-detail').value = room.detail || '';
+    
+    // Show current image if exists
+    const preview = document.getElementById('image-preview');
+    const previewImg = document.getElementById('preview-img');
+    if (room.image) {
+        previewImg.src = room.image;
+        preview.style.display = 'block';
+    } else {
+        preview.style.display = 'none';
+    }
+    
+    // Clear file input
+    document.getElementById('room-image').value = '';
     
     document.getElementById('room-modal').style.display = 'block';
 }
@@ -165,6 +178,12 @@ function resetRoomForm() {
     document.getElementById('room-bedrooms').value = 1;
     document.getElementById('room-bathrooms').value = 1;
     document.getElementById('room-status').value = 'EMPTY';
+    
+    // Reset image preview
+    const preview = document.getElementById('image-preview');
+    if (preview) {
+        preview.style.display = 'none';
+    }
 }
 
 function hideRoomModal() {
@@ -186,51 +205,90 @@ function hideDeleteModal() {
 async function handleRoomSubmit(event) {
     event.preventDefault();
     
-    const formData = new FormData();
-    
-    // Add basic room data
-    formData.append('name', document.getElementById('room-name').value.trim());
-    formData.append('bedrooms', parseInt(document.getElementById('room-bedrooms').value));
-    formData.append('bathrooms', parseInt(document.getElementById('room-bathrooms').value));
-    formData.append('base_price', parseFloat(document.getElementById('room-price').value));
-    formData.append('address', document.getElementById('room-address').value.trim());
-    formData.append('status', document.getElementById('room-status').value);
-    formData.append('detail', document.getElementById('room-detail').value.trim());
-    
-    // Add area if provided
-    const area = parseFloat(document.getElementById('room-area').value);
-    if (area) {
-        formData.append('area_m2', area);
-    }
-    
-    // Add image file if selected
     const imageFile = document.getElementById('room-image').files[0];
-    if (imageFile) {
-        formData.append('image', imageFile);
-    }
     
-    try {
-        showLoading(true, currentEditingRoom ? 'Đang cập nhật phòng...' : 'Đang tạo phòng mới...');
+    // Nếu có hình ảnh, sử dụng FormData để upload
+    if (imageFile) {
+        const formData = new FormData();
+        formData.append('name', document.getElementById('room-name').value.trim());
+        formData.append('bedrooms', parseInt(document.getElementById('room-bedrooms').value));
+        formData.append('bathrooms', parseInt(document.getElementById('room-bathrooms').value));
+        formData.append('base_price', parseFloat(document.getElementById('room-price').value));
+        formData.append('address', document.getElementById('room-address').value.trim());
+        formData.append('status', document.getElementById('room-status').value);
+        formData.append('detail', document.getElementById('room-detail').value.trim());
+        formData.append('image', imageFile);
         
-        let result;
-        
-        if (currentEditingRoom) {
-            // Update existing room using FormData
-            result = await api.updateRoomWithFile(currentEditingRoom.id, formData);
-        } else {
-            // Create new room using FormData
-            result = await api.createRoomWithFile(formData);
+        // Thêm area nếu có
+        const area = parseFloat(document.getElementById('room-area').value);
+        if (area) {
+            formData.append('area_m2', area);
         }
         
-        hideRoomModal();
-        await loadRooms();
-        showSuccess(currentEditingRoom ? 'Cập nhật phòng thành công!' : 'Thêm phòng thành công!');
+        try {
+            showLoading(true, currentEditingRoom ? 'Đang cập nhật phòng...' : 'Đang tạo phòng mới...');
+            
+            let result;
+            
+            if (currentEditingRoom) {
+                // Update existing room with image
+                result = await api.updateRoomWithFile(currentEditingRoom.id, formData);
+            } else {
+                // Create new room with image
+                result = await api.createRoomWithFile(formData);
+            }
+            
+            hideRoomModal();
+            await loadRooms();
+            showSuccess(currentEditingRoom ? 'Cập nhật phòng thành công!' : 'Thêm phòng thành công!');
+            
+        } catch (error) {
+            console.error('Error saving room:', error);
+            showError('Không thể lưu phòng: ' + error.message);
+        } finally {
+            showLoading(false);
+        }
+    } else {
+        // Không có hình ảnh, dùng JSON như cũ
+        const roomData = {
+            name: document.getElementById('room-name').value.trim(),
+            bedrooms: parseInt(document.getElementById('room-bedrooms').value),
+            bathrooms: parseInt(document.getElementById('room-bathrooms').value),
+            base_price: parseFloat(document.getElementById('room-price').value),
+            address: document.getElementById('room-address').value.trim(),
+            status: document.getElementById('room-status').value,
+            detail: document.getElementById('room-detail').value.trim()
+        };
         
-    } catch (error) {
-        console.error('Error saving room:', error);
-        showError('Không thể lưu phòng: ' + error.message);
-    } finally {
-        showLoading(false);
+        // Thêm area nếu có
+        const area = parseFloat(document.getElementById('room-area').value);
+        if (area) {
+            roomData.area_m2 = area;
+        }
+        
+        try {
+            showLoading(true, currentEditingRoom ? 'Đang cập nhật phòng...' : 'Đang tạo phòng mới...');
+            
+            let result;
+            
+            if (currentEditingRoom) {
+                // Update existing room
+                result = await api.updateRoom(currentEditingRoom.id, roomData);
+            } else {
+                // Create new room
+                result = await api.createRoom(roomData);
+            }
+            
+            hideRoomModal();
+            await loadRooms();
+            showSuccess(currentEditingRoom ? 'Cập nhật phòng thành công!' : 'Thêm phòng thành công!');
+            
+        } catch (error) {
+            console.error('Error saving room:', error);
+            showError('Không thể lưu phòng: ' + error.message);
+        } finally {
+            showLoading(false);
+        }
     }
 }
 
@@ -253,8 +311,8 @@ async function handleDeleteRoom() {
 function handleSearch(event) {
     const searchTerm = event.target.value.toLowerCase();
     const filteredRooms = rooms.filter(room => 
-        room.name.toLowerCase().includes(searchTerm) ||
-        room.address?.toLowerCase().includes(searchTerm)
+        (room.name || '').toLowerCase().includes(searchTerm) ||
+        (room.address || '').toLowerCase().includes(searchTerm)
     );
     
     // Temporarily update rooms for rendering
@@ -345,9 +403,9 @@ function showSuccess(message) {
     }, 3000);
 }
 
-// Handle image preview
-function handleImagePreview(event) {
-    const file = event.target.files[0];
+// Preview image function used in HTML
+function previewImage(input) {
+    const file = input.files[0];
     const preview = document.getElementById('image-preview');
     const previewImg = document.getElementById('preview-img');
     
@@ -361,6 +419,11 @@ function handleImagePreview(event) {
     } else {
         preview.style.display = 'none';
     }
+}
+
+// Handle image preview (existing function, keep for compatibility)
+function handleImagePreview(event) {
+    previewImage(event.target);
 }
 
 // Upload image file (simplified - store as base64 for now)

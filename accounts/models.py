@@ -13,8 +13,9 @@ class User(AbstractUser):
     # email duy nhất (tiện cho login bằng email)
     email = models.EmailField(unique=True)
 
-    # username vẫn giữ (AbstractUser yêu cầu), nhưng bạn có thể set = email khi tạo
+    # username vẫn giữ (AbstractUser yêu cầu), chỉ set = email khi username trống
     def save(self, *args, **kwargs):
+        # Chỉ set username = email nếu username thực sự trống
         if not self.username:
             self.username = self.email
         super().save(*args, **kwargs)

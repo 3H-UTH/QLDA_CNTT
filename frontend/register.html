@@ -4,77 +4,101 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Đăng ký - 3H Rental</title>
+    <meta name="description" content="Tạo tài khoản 3H Rental để bắt đầu tìm kiếm và thuê phòng trọ cao cấp." />
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Styles -->
     <link rel="stylesheet" href="css/styles.css" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
-    <style>
-      .error-message {
-        color: #dc3545;
-        font-size: 0.875rem;
-        margin-top: 0.25rem;
-        margin-bottom: 0.5rem;
-      }
-      .input.error {
-        border-color: #dc3545;
-      }
-      .input.error:focus {
-        box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
-      }
-      .password-field {
-        position: relative;
-      }
-      .toggle-password {
-        position: absolute;
-        right: 10px;
-        top: 50%;
-        transform: translateY(-50%);
-        cursor: pointer;
-        color: #666;
-      }
-      .toggle-password:hover {
-        color: #333;
-      }
-    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
   </head>
   <body>
     <header id="navbar"></header>
     <main class="container">
-      <section class="section" style="max-width: 520px; margin: 2rem auto">
-        <h2>Đăng ký</h2>
-        <form id="registerForm">
-          <label>Họ và tên</label>
-          <input class="input" id="fullName" required />
-          <div id="fullNameError" class="error-message"></div>
-          
-          <label>Email</label>
-          <input class="input" type="email" id="email" required />
-          <div id="emailError" class="error-message"></div>
-          
-          <label>Mật khẩu</label>
-          <div class="password-field">
-            <input class="input" type="password" id="password" required />
-            <i class="toggle-password fas fa-eye" onclick="togglePassword('password')"></i>
+      <section class="section" style="max-width: 520px; margin: 3rem auto; padding: 2rem;">
+        <!-- Register Card -->
+        <div style="background: var(--card-bg); border-radius: var(--radius-xl); padding: 3rem; box-shadow: var(--shadow-lg); border: 1px solid var(--border);">
+          <!-- Header -->
+          <div style="text-align: center; margin-bottom: 2rem;">
+            <div style="background: linear-gradient(135deg, var(--accent-green), var(--accent-blue)); width: 4rem; height: 4rem; border-radius: var(--radius-lg); display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem;">
+              <i class="fas fa-user-plus" style="color: white; font-size: 1.5rem;"></i>
+            </div>
+            <h2 style="margin-bottom: 0.5rem; color: var(--text-primary);">Tạo tài khoản mới</h2>
+            <p style="color: var(--text-muted); margin: 0;">Tham gia cộng đồng 3H Rental ngay hôm nay</p>
           </div>
-          <div id="passwordError" class="error-message"></div>
           
-          <label>Xác nhận mật khẩu</label>
-          <div class="password-field">
-            <input class="input" type="password" id="passwordConfirm" required />
-            <i class="toggle-password fas fa-eye" onclick="togglePassword('passwordConfirm')"></i>
+          <!-- Register Form -->
+          <form id="registerForm">
+            <div class="form-group">
+              <label style="color: var(--text-primary); font-weight: 600;">Họ và tên</label>
+              <input class="input" id="fullName" placeholder="Nhập họ và tên đầy đủ" required />
+              <div id="fullNameError" class="error-message" style="color: var(--danger); font-size: 0.875rem; margin-top: 0.25rem; display: none;"></div>
+            </div>
+            
+            <div class="form-group">
+              <label style="color: var(--text-primary); font-weight: 600;">Tên người dùng</label>
+              <input class="input" id="username" placeholder="Nhập tên người dùng (chỉ chữ, số và _)" required />
+              <div id="usernameError" class="error-message" style="color: var(--danger); font-size: 0.875rem; margin-top: 0.25rem; display: none;"></div>
+              <small style="color: var(--text-muted); font-size: 0.8rem;">Tên người dùng chỉ được chứa chữ cái, số và dấu gạch dưới</small>
+            </div>
+            
+            <div class="form-group">
+              <label style="color: var(--text-primary); font-weight: 600;">Email</label>
+              <input class="input" type="email" id="email" placeholder="Nhập địa chỉ email" required />
+              <div id="emailError" class="error-message" style="color: var(--danger); font-size: 0.875rem; margin-top: 0.25rem; display: none;"></div>
+            </div>
+            
+            <div class="form-group">
+              <label style="color: var(--text-primary); font-weight: 600;">Mật khẩu</label>
+              <div style="position: relative;">
+                <input class="input" type="password" id="password" placeholder="Tối thiểu 8 ký tự" required />
+                <button type="button" onclick="togglePassword('password')" style="position: absolute; right: 1rem; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--text-muted); cursor: pointer;">
+                  <i class="fas fa-eye" id="password-toggle"></i>
+                </button>
+              </div>
+              <div id="passwordError" class="error-message" style="color: var(--danger); font-size: 0.875rem; margin-top: 0.25rem; display: none;"></div>
+            </div>
+            
+            <div class="form-group">
+              <label style="color: var(--text-primary); font-weight: 600;">Xác nhận mật khẩu</label>
+              <div style="position: relative;">
+                <input class="input" type="password" id="passwordConfirm" placeholder="Nhập lại mật khẩu" required />
+                <button type="button" onclick="togglePassword('passwordConfirm')" style="position: absolute; right: 1rem; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--text-muted); cursor: pointer;">
+                  <i class="fas fa-eye" id="passwordConfirm-toggle"></i>
+                </button>
+              </div>
+              <div id="passwordConfirmError" class="error-message" style="color: var(--danger); font-size: 0.875rem; margin-top: 0.25rem; display: none;"></div>
+            </div>
+            
+            <button class="btn btn-primary" type="submit" style="width: 100%; margin-top: 1.5rem;">
+              <i class="fas fa-user-plus"></i>
+              Tạo tài khoản
+            </button>
+          </form>
+          
+          <!-- Login Link -->
+          <div style="text-align: center; margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--border);">
+            <p style="color: var(--text-muted); margin-bottom: 0.5rem;">Đã có tài khoản?</p>
+            <a href="login.html" class="btn btn-ghost" style="text-decoration: none;">
+              <i class="fas fa-sign-in-alt"></i>
+              Đăng nhập ngay
+            </a>
           </div>
-          <div id="passwordConfirmError" class="error-message"></div>
-          
-          <button class="btn" type="submit">Tạo tài khoản</button>
-          <p>Đã có tài khoản? <a href="login.html">Đăng nhập</a></p>
-        </form>
+        </div>
       </section>
     </main>
+    
+    <script src="js/api.js"></script>
     <script src="js/storage.js"></script>
     <script src="js/auth.js"></script>
     <script src="js/main.js"></script>
     <script>
       function togglePassword(inputId) {
         const input = document.getElementById(inputId);
-        const icon = input.nextElementSibling;
+        const icon = document.getElementById(inputId + '-toggle');
         
         if (input.type === 'password') {
           input.type = 'text';
@@ -86,78 +110,175 @@
           icon.classList.add('fa-eye');
         }
       }
-    </script>
-    <script>
+      
+      function showError(fieldId, message) {
+        const errorDiv = document.getElementById(fieldId + 'Error');
+        const input = document.getElementById(fieldId);
+        
+        errorDiv.textContent = message;
+        errorDiv.style.display = 'block';
+        input.style.borderColor = 'var(--danger)';
+      }
+      
+      function clearError(fieldId) {
+        const errorDiv = document.getElementById(fieldId + 'Error');
+        const input = document.getElementById(fieldId);
+        
+        errorDiv.style.display = 'none';
+        input.style.borderColor = 'var(--border)';
+      }
+      
+      function clearAllErrors() {
+        ['fullName', 'username', 'email', 'password', 'passwordConfirm'].forEach(clearError);
+      }
+      
+      function validateForm() {
+        clearAllErrors();
+        let isValid = true;
+        
+        // Validate full name
+        const fullName = document.getElementById('fullName').value.trim();
+        if (!fullName) {
+          showError('fullName', 'Vui lòng nhập họ và tên');
+          isValid = false;
+        } else if (fullName.length < 2) {
+          showError('fullName', 'Họ và tên phải có ít nhất 2 ký tự');
+          isValid = false;
+        }
+        
+        // Validate username
+        const username = document.getElementById('username').value.trim();
+        const usernameRegex = /^[a-zA-Z0-9_]+$/;
+        if (!username) {
+          showError('username', 'Vui lòng nhập tên người dùng');
+          isValid = false;
+        } else if (username.length < 3) {
+          showError('username', 'Tên người dùng phải có ít nhất 3 ký tự');
+          isValid = false;
+        } else if (!usernameRegex.test(username)) {
+          showError('username', 'Tên người dùng chỉ được chứa chữ cái, số và dấu gạch dưới');
+          isValid = false;
+        }
+        
+        // Validate email
+        const email = document.getElementById('email').value.trim();
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!email) {
+          showError('email', 'Vui lòng nhập email');
+          isValid = false;
+        } else if (!emailRegex.test(email)) {
+          showError('email', 'Email không hợp lệ');
+          isValid = false;
+        }
+        
+        // Validate password
+        const password = document.getElementById('password').value;
+        if (!password) {
+          showError('password', 'Vui lòng nhập mật khẩu');
+          isValid = false;
+        } else if (password.length < 8) {
+          showError('password', 'Mật khẩu phải có ít nhất 8 ký tự');
+          isValid = false;
+        }
+        
+        // Validate password confirmation
+        const passwordConfirm = document.getElementById('passwordConfirm').value;
+        if (!passwordConfirm) {
+          showError('passwordConfirm', 'Vui lòng xác nhận mật khẩu');
+          isValid = false;
+        } else if (password !== passwordConfirm) {
+          showError('passwordConfirm', 'Mật khẩu xác nhận không khớp');
+          isValid = false;
+        }
+        
+        return isValid;
+      }
+      
       document.addEventListener("DOMContentLoaded", () => {
-        // Hàm helper để hiển thị lỗi
-        function showError(fieldId, message) {
-          const field = qs(`#${fieldId}`);
-          const errorDiv = qs(`#${fieldId}Error`);
-          field.classList.add('error');
-          errorDiv.textContent = message;
-        }
-
-        // Hàm helper để xóa lỗi
-        function clearErrors() {
-          document.querySelectorAll('.error-message').forEach(div => div.textContent = '');
-          document.querySelectorAll('.input').forEach(input => input.classList.remove('error'));
-        }
-
-        qs("#registerForm").addEventListener("submit", async (e) => {
+        const form = document.getElementById('registerForm');
+        
+        form.addEventListener("submit", async (e) => {
           e.preventDefault();
-          clearErrors();
-
+          
+          if (!validateForm()) {
+            return;
+          }
+          
+          const submitBtn = e.target.querySelector('button[type="submit"]');
+          const originalText = submitBtn.innerHTML;
+          
           try {
-            const password = qs("#password").value;
-            const passwordConfirm = qs("#passwordConfirm").value;
-            
-            // Kiểm tra mật khẩu khớp nhau
-            if (password !== passwordConfirm) {
-              showError('passwordConfirm', "Mật khẩu xác nhận không khớp!");
-              return;
-            }
-
-            const registerData = {
-              fullName: qs("#fullName").value,
-              email: qs("#email").value,
-              password: password,
-              passwordConfirm: passwordConfirm
-            };
-
-            console.log('Attempting to register with:', {
-              ...registerData,
-              password: '[HIDDEN]',
-              passwordConfirm: '[HIDDEN]'
-            });
-
-            // Disable nút submit trong khi đang xử lý
-            const submitBtn = e.target.querySelector('button[type="submit"]');
+            // Show loading state
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang tạo tài khoản...';
             submitBtn.disabled = true;
-            submitBtn.textContent = 'Đang xử lý...';
-
-            const result = await register(registerData);
-            console.log('Registration successful:', result);
             
-            // Hiển thị thông báo thành công và reset form
-            alert('Đăng ký thành công! Vui lòng đăng nhập.');
-            window.location.href = 'login.html';
+            const formData = {
+              fullName: document.getElementById('fullName').value.trim(),
+              username: document.getElementById('username').value.trim(),
+              email: document.getElementById('email').value.trim(),
+              password: document.getElementById('password').value,
+              passwordConfirm: document.getElementById('passwordConfirm').value
+            };
+            
+            const result = await register(formData);
+            
+            // Show success and redirect
+            submitBtn.innerHTML = '<i class="fas fa-check"></i> Thành công!';
+            setTimeout(() => {
+              // Add timestamp to force page refresh and navbar update
+              const url = new URL("index.html", window.location.origin);
+              url.searchParams.set('_t', Date.now());
+              window.location.href = url.toString();
+            }, 1000);
             
           } catch (err) {
-            console.error('Registration error:', err);
+            console.error("Registration error:", err);
             
-            // Xử lý các loại lỗi khác nhau
-            if (err.message.includes('Email này đã được đăng ký')) {
-              showError('email', err.message);
-            } else if (err.message.includes('mật khẩu')) {
-              showError('password', err.message);
-            } else {
-              alert(err.message);
-            }
-          } finally {
-            // Re-enable nút submit
-            const submitBtn = e.target.querySelector('button[type="submit"]');
+            // Reset button
+            submitBtn.innerHTML = originalText;
             submitBtn.disabled = false;
-            submitBtn.textContent = 'Tạo tài khoản';
+            
+            // Show error
+            if (err.message.includes('email')) {
+              showError('email', err.message);
+            } else if (err.message.includes('username')) {
+              showError('username', err.message);
+            } else {
+              alert(err.message || 'Đăng ký thất bại. Vui lòng thử lại.');
+            }
+          }
+        });
+        
+        // Real-time validation
+        document.getElementById('username').addEventListener('blur', () => {
+          const username = document.getElementById('username').value.trim();
+          const usernameRegex = /^[a-zA-Z0-9_]+$/;
+          if (username && !usernameRegex.test(username)) {
+            showError('username', 'Tên người dùng chỉ được chứa chữ cái, số và dấu gạch dưới');
+          } else if (username && username.length < 3) {
+            showError('username', 'Tên người dùng phải có ít nhất 3 ký tự');
+          } else {
+            clearError('username');
+          }
+        });
+        
+        document.getElementById('email').addEventListener('blur', () => {
+          const email = document.getElementById('email').value.trim();
+          if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+            showError('email', 'Email không hợp lệ');
+          } else {
+            clearError('email');
+          }
+        });
+        
+        document.getElementById('passwordConfirm').addEventListener('input', () => {
+          const password = document.getElementById('password').value;
+          const passwordConfirm = document.getElementById('passwordConfirm').value;
+          
+          if (passwordConfirm && password !== passwordConfirm) {
+            showError('passwordConfirm', 'Mật khẩu xác nhận không khớp');
+          } else {
+            clearError('passwordConfirm');
           }
         });
       });

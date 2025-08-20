@@ -1,17 +1,33 @@
 from django.db import models
+from django.utils import timezone
 
-class Building(models.Model):
-    name = models.CharField(max_length=120)
-    address = models.CharField(max_length=255)
+
 
 class Room(models.Model):
     EMPTY = "EMPTY"; RENTED = "RENTED"; MAINT = "MAINT"
     STATUS_CHOICES = [(EMPTY,"EMPTY"), (RENTED,"RENTED"), (MAINT,"MAINT")]
-    building = models.ForeignKey(Building, on_delete=models.CASCADE, related_name="rooms")
+    
     name = models.CharField(max_length=50)
     area_m2 = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
     base_price = models.DecimalField(max_digits=12, decimal_places=2)
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default=EMPTY)
+    
+    # Thêm các trường mới
+    bedrooms = models.PositiveIntegerField(default=1, help_text="Số phòng ngủ")
+    bathrooms = models.PositiveIntegerField(default=1, help_text="Số phòng tắm")
+    address = models.CharField(max_length=255, blank=True, default='', help_text="Địa chỉ phòng")
+    detail = models.TextField(blank=True, default='', help_text="Mô tả chi tiết về phòng")
+    image = models.ImageField(upload_to='rooms/', blank=True, null=True, help_text="Hình ảnh phòng")
+    
+    # Metadata với default values
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.name} - {self.base_price}đ"
+
+    class Meta:
+        ordering = ['name']
 
 
 class Tenant(models.Model): 

@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản lý phòng - 3H Rental</title>
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="css/styles.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    
+    <style>
+        .management-container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+        
+        .management-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding: 1.5rem;
+            background: var(--card-bg);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-sm);
+        }
+        
+        .search-bar {
+            flex: 1;
+            max-width: 400px;
+            margin-right: 1rem;
+        }
+        
+        .rooms-table {
+            background: var(--card-bg);
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            box-shadow: var(--shadow-sm);
+        }
+        
+        .rooms-table table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .rooms-table th {
+            background: var(--surface);
+            padding: 1rem;
+            text-align: left;
+            font-weight: 600;
+            color: var(--text-primary);
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .rooms-table td {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border);
+            color: var(--text-secondary);
+        }
+        
+        .rooms-table tr:hover {
+            background: var(--surface);
+        }
+        
+        .status-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: var(--radius-full);
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+        
+        .status-empty {
+            background: var(--success-light);
+            color: var(--success);
+        }
+        
+        .status-rented {
+            background: var(--warning-light);
+            color: var(--warning);
+        }
+        
+        .status-maint {
+            background: var(--danger-light);
+            color: var(--danger);
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .btn-sm {
+            padding: 0.5rem;
+            font-size: 0.875rem;
+            border-radius: var(--radius);
+        }
+        
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+        
+        .modal-content {
+            background: var(--card-bg);
+            margin: 5% auto;
+            padding: 0;
+            border-radius: var(--radius-xl);
+            width: 90%;
+            max-width: 600px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        
+        .modal-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .modal-body {
+            padding: 1.5rem;
+        }
+        
+        .modal-footer {
+            padding: 1.5rem;
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: flex-end;
+            gap: 1rem;
+        }
+        
+        .form-row {
+            display: flex;
+            gap: 1rem;
+        }
+        
+        .form-row .form-group {
+            flex: 1;
+        }
+        
+        .image-upload {
+            margin-top: 1rem;
+        }
+        
+        .image-preview {
+            margin-top: 1rem;
+            text-align: center;
+        }
+        
+        .image-preview img {
+            max-width: 200px;
+            max-height: 200px;
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+        }
+        
+        .close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--text-muted);
+        }
+        
+        .close:hover {
+            color: var(--text-primary);
+        }
+        
+        #loading {
+            text-align: center;
+            padding: 3rem;
+            color: var(--text-muted);
+        }
+    </style>
+</head>
+<body>
+    <header id="navbar"></header>
+    
+    <main class="management-container">
+        <!-- Header -->
+        <div class="management-header">
+            <div>
+                <h1 style="margin: 0; color: var(--text-primary);">
+                    <i class="fas fa-home"></i> Quản lý phòng
+                </h1>
+                <p style="margin: 0.5rem 0 0; color: var(--text-muted);">
+                    Quản lý danh sách phòng cho thuê
+                </p>
+            </div>
+            <div style="display: flex; align-items: center; gap: 1rem;">
+                <input 
+                    type="text" 
+                    id="search-rooms" 
+                    class="input search-bar" 
+                    placeholder="Tìm kiếm phòng..."
+                />
+                <button id="btn-add-room" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Thêm phòng
+                </button>
+            </div>
+        </div>
+        
+        <!-- Loading -->
+        <div id="loading" style="display: none;">
+            <i class="fas fa-spinner fa-spin"></i> Đang tải...
+        </div>
+        
+        <!-- Rooms Table -->
+        <div id="rooms-table-container" class="rooms-table">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Tên phòng</th>
+                        <th>Diện tích</th>
+                        <th>Phòng ngủ</th>
+                        <th>Phòng tắm</th>
+                        <th>Giá thuê</th>
+                        <th>Trạng thái</th>
+                        <th>Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody id="rooms-tbody">
+                    <!-- Rooms will be loaded here -->
+                </tbody>
+            </table>
+        </div>
+    </main>
+    
+    <!-- Room Modal -->
+    <div id="room-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modal-title" style="margin: 0; color: var(--text-primary);">
+                    <i class="fas fa-plus"></i> Thêm phòng mới
+                </h3>
+                <button id="close-modal" class="close">&times;</button>
+            </div>
+            
+            <form id="room-form" enctype="multipart/form-data">
+                <div class="modal-body">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Tên phòng *</label>
+                            <input type="text" id="room-name" class="input" required placeholder="VD: Phòng A1">
+                        </div>
+                        <div class="form-group">
+                            <label>Diện tích (m²)</label>
+                            <input type="number" id="room-area" class="input" step="0.1" placeholder="25.5">
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Số phòng ngủ *</label>
+                            <select id="room-bedrooms" class="input" required>
+                                <option value="1">1 phòng</option>
+                                <option value="2">2 phòng</option>
+                                <option value="3">3 phòng</option>
+                                <option value="4">4+ phòng</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Số phòng tắm *</label>
+                            <select id="room-bathrooms" class="input" required>
+                                <option value="1">1 phòng</option>
+                                <option value="2">2 phòng</option>
+                                <option value="3">3+ phòng</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Giá thuê (VND) *</label>
+                            <input type="number" id="room-price" class="input" required placeholder="3000000">
+                        </div>
+                        <div class="form-group">
+                            <label>Trạng thái *</label>
+                            <select id="room-status" class="input" required>
+                                <option value="EMPTY">Trống</option>
+                                <option value="RENTED">Đã thuê</option>
+                                <option value="MAINT">Bảo trì</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Địa chỉ</label>
+                        <input type="text" id="room-address" class="input" placeholder="123 Đường ABC, Quận XYZ">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Mô tả chi tiết</label>
+                        <textarea id="room-detail" class="input" rows="3" placeholder="Mô tả về phòng, tiện nghi, điều kiện..."></textarea>
+                    </div>
+                    
+                    <div class="form-group image-upload">
+                        <label>Hình ảnh phòng</label>
+                        <input type="file" id="room-image" class="input" accept="image/*" onchange="previewImage(this)">
+                        <div id="image-preview" class="image-preview" style="display: none;">
+                            <img id="preview-img" alt="Preview">
+                            <p style="margin-top: 0.5rem; color: var(--text-muted); font-size: 0.875rem;">Xem trước hình ảnh</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="modal-footer">
+                    <button type="button" id="cancel-modal" class="btn btn-secondary">Hủy</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Lưu phòng
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Delete Confirmation Modal -->
+    <div id="delete-modal" class="modal">
+        <div class="modal-content" style="max-width: 400px;">
+            <div class="modal-header">
+                <h3 style="margin: 0; color: var(--danger);">
+                    <i class="fas fa-trash"></i> Xác nhận xóa
+                </h3>
+                <button id="close-delete-modal" class="close">&times;</button>
+            </div>
+            
+            <div class="modal-body">
+                <p>Bạn có chắc chắn muốn xóa phòng <strong id="delete-room-name"></strong>?</p>
+                <p style="color: var(--text-muted); font-size: 0.875rem;">
+                    Hành động này không thể hoàn tác.
+                </p>
+            </div>
+            
+            <div class="modal-footer">
+                <button id="cancel-delete" class="btn btn-secondary">Hủy</button>
+                <button id="confirm-delete" class="btn btn-danger">
+                    <i class="fas fa-trash"></i> Xóa
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Scripts -->
+    <script src="js/api.js"></script>
+    <script src="js/storage.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/main.js"></script>
+    <script src="js/room-management.js"></script>
+</body>
+</html>

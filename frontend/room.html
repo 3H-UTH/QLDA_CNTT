@@ -4,13 +4,35 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Chi tiết phòng - 3H Rental</title>
+    <meta name="description" content="Xem chi tiết phòng cho thuê với đầy đủ thông tin, hình ảnh và tiện nghi." />
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Styles -->
     <link rel="stylesheet" href="css/styles.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
   </head>
   <body>
     <header id="navbar"></header>
     <main class="container">
-      <section class="section"><div id="room-detail"></div></section>
+      <section class="section">
+        <!-- Breadcrumb -->
+        <nav class="breadcrumb" style="margin-bottom: 2rem;">
+          <a href="index.html" style="color: var(--text-muted); text-decoration: none;">
+            <i class="fas fa-home"></i> Trang chủ
+          </a>
+          <span style="color: var(--text-light); margin: 0 0.5rem;">></span>
+          <span style="color: var(--text-secondary);">Chi tiết phòng</span>
+        </nav>
+        
+        <div id="room-detail"></div>
+      </section>
     </main>
+    
+    <script src="js/api.js"></script>
     <script src="js/storage.js"></script>
     <script src="js/auth.js"></script>
     <script src="js/main.js"></script>
