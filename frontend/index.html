@@ -156,11 +156,30 @@
             const img = room.image || 'assets/placeholder.svg';
             const price = parseFloat(room.base_price || 0).toLocaleString('vi-VN') + '₫';
             
+            // Function to translate status to Vietnamese
+            const getStatusText = (status) => {
+              const statusMap = {
+                'EMPTY': 'Còn trống',
+                'RENTED': 'Đã thuê',
+                'MAINT': 'Bảo trì'
+              };
+              return statusMap[status] || status;
+            };
+            
+            const getStatusColor = (status) => {
+              const colorMap = {
+                'EMPTY': '#4CAF50',      // Green for available
+                'RENTED': '#f44336',     // Red for rented
+                'MAINT': '#9c27b0'       // Purple for maintenance
+              };
+              return colorMap[status] || '#4CAF50';
+            };
+            
             div.innerHTML = `
               <div style="position: relative; overflow: hidden;">
                 <img src="${img}" alt="${room.name}" loading="lazy" style="width: 100%; height: 200px; object-fit: cover;">
-                <div class="badge status-available" style="position: absolute; top: 1rem; right: 1rem; background: #4CAF50; color: white; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem;">
-                  ${room.status === 'EMPTY' ? 'Còn trống' : room.status}
+                <div class="badge status-available" style="position: absolute; top: 1rem; right: 1rem; background: ${getStatusColor(room.status)}; color: white; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem;">
+                  ${getStatusText(room.status)}
                 </div>
               </div>
               <div class="body" style="padding: 1rem;">

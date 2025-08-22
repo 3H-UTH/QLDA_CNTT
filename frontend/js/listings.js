@@ -55,22 +55,18 @@ function renderRooms(rooms) {
     // Determine status badge - map Django model status to display text
     let statusBadge = '';
     let statusClass = '';
-    switch(r.status?.toLowerCase()) {
-      case 'empty':
+    switch(r.status?.toUpperCase()) {
+      case 'EMPTY':
         statusBadge = 'Còn trống';
         statusClass = 'status-available';
         break;
-      case 'rented':
+      case 'RENTED':
         statusBadge = 'Đã thuê';
         statusClass = 'status-rented';
         break;
-      case 'maint':
+      case 'MAINT':
         statusBadge = 'Bảo trì';
         statusClass = 'status-maintenance';
-        break;
-      case 'available': // localStorage fallback
-        statusBadge = 'Còn trống';
-        statusClass = 'status-available';
         break;
       default:
         statusBadge = 'Đang xử lý';
@@ -80,7 +76,7 @@ function renderRooms(rooms) {
     // Map API fields to display fields
     const title = r.name || r.title || 'Phòng không tên';
     const location = r.building?.address || r.address || r.location || 'Chưa có địa chỉ';
-    const price = r.base_price || r.price || 0;
+    const price = parseFloat(r.base_price || r.price || 0);
     const description = r.detail || r.description || 'Phòng hiện đại, đầy đủ tiện nghi';
     const bedrooms = r.bedrooms || 1;
     const bathrooms = r.bathrooms || 1;
@@ -136,7 +132,7 @@ function renderRooms(rooms) {
             <i class="fas fa-eye"></i>
             Xem chi tiết
           </a>
-          ${r.status?.toLowerCase() === 'empty' ? `
+          ${r.status?.toUpperCase() === 'EMPTY' ? `
             <button class="btn btn-accent" onclick="handleRentNow(${r.id})" style="flex: 1; justify-content: center;">
               <i class="fas fa-key"></i>
               Thuê ngay
@@ -199,7 +195,7 @@ async function applySearch() {
     const title = r.name || r.title || '';
     const description = r.detail || r.description || '';
     const location = r.address || r.location || '';
-    const price = r.base_price || r.price || 0;
+    const price = parseFloat(r.base_price || r.price || 0);
     
     const okKw =
       !kw ||

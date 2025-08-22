@@ -1,7 +1,10 @@
 from rest_framework import serializers
-from .models import Room, Contract, MeterReading, Invoice, Tenant, Payment
+from .models import Room, Contract, MeterReading, Invoice, Payment
+from django.contrib.auth import get_user_model
 from drf_spectacular.utils import extend_schema_field
 from decimal import Decimal
+
+User = get_user_model()
 
 class RoomSerializer(serializers.ModelSerializer):
     image = serializers.ImageField(required=False, allow_null=True)
@@ -94,9 +97,9 @@ class ContractCreateSerializer(serializers.ModelSerializer):
         return contract
     
 class ContractSerializer(serializers.ModelSerializer):
-    tenant_name  = serializers.CharField(source="tenant.user.full_name", read_only=True)
+    tenant_name  = serializers.CharField(source="tenant.full_name", read_only=True)
     tenant_phone = serializers.CharField(source="tenant.phone", read_only=True)
-    tenant_email = serializers.EmailField(source="tenant.user.email", read_only=True)
+    tenant_email = serializers.EmailField(source="tenant.email", read_only=True)
     class Meta:
         model = Contract
         fields = ["id","room","tenant","tenant_name","tenant_phone","tenant_email","start_date","end_date","deposit","billing_cycle","status"]
@@ -218,27 +221,16 @@ class InvoiceGenerateSerializer(serializers.Serializer):
 
 
 class TenantSerializer(serializers.ModelSerializer):
-    user_info = serializers.SerializerMethodField(read_only=True)
-    full_name = serializers.CharField(source="user.full_name", read_only=True)
-    email = serializers.CharField(source="user.email", read_only=True)
+    """Serializer cho User với role TENANT"""
     
     class Meta:
-        model = Tenant
+        model = User
         fields = [
-            "id", "user", "user_info", "full_name", "email",
-            "id_number", "phone", "address", "emergency_contact"
+            "id", "full_name", "email", "role", "is_active",
+            "id_number", "phone", "address", "emergency_contact",
+            "occupation", "workplace", "emergency_phone", "emergency_relationship"
         ]
-        read_only_fields = ["user"]
-
-    @extend_schema_field(serializers.DictField())
-    def get_user_info(self, obj):
-        return {
-            "id": obj.user.id,
-            "full_name": obj.user.full_name,
-            "email": obj.user.email,
-            "role": obj.user.role,
-            "is_active": obj.user.is_active
-        }
+        read_only_fields = ["email", "role"]
 
     def validate_id_number(self, value):
         if value and len(value) < 9:

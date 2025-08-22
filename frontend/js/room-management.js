@@ -103,9 +103,9 @@ function renderRoomsTable() {
             <td>${room.area_m2 ? room.area_m2 + ' m²' : '-'}</td>
             <td>${room.bedrooms || 1}</td>
             <td>${room.bathrooms || 1}</td>
-            <td>${fmtVND(room.base_price || 0)}</td>
+            <td>${fmtVND(parseFloat(room.base_price || 0))}</td>
             <td>
-                <span class="status-badge status-${(room.status || 'empty').toLowerCase()}">
+                <span class="status-badge status-${(room.status || 'EMPTY').toLowerCase()}">
                     ${getStatusText(room.status || 'EMPTY')}
                 </span>
             </td>
@@ -157,6 +157,11 @@ function editRoom(roomId) {
     document.getElementById('room-status').value = room.status || 'EMPTY';
     document.getElementById('room-detail').value = room.detail || '';
     
+    // Populate owner information
+    document.getElementById('owner-name').value = room.owner_name || '';
+    document.getElementById('owner-phone').value = room.owner_phone || '';
+    document.getElementById('owner-email').value = room.owner_email || '';
+    
     // Show current images if exist
     const preview = document.getElementById('images-preview');
     preview.innerHTML = '';
@@ -194,6 +199,11 @@ function resetRoomForm() {
     document.getElementById('room-bedrooms').value = 1;
     document.getElementById('room-bathrooms').value = 1;
     document.getElementById('room-status').value = 'EMPTY';
+    
+    // Reset owner information
+    document.getElementById('owner-name').value = '';
+    document.getElementById('owner-phone').value = '';
+    document.getElementById('owner-email').value = '';
     
     // Reset images preview
     const preview = document.getElementById('images-preview');
@@ -234,7 +244,11 @@ async function handleRoomSubmit(event) {
             base_price: parseFloat(document.getElementById('room-price').value),
             address: document.getElementById('room-address').value.trim(),
             status: document.getElementById('room-status').value,
-            detail: document.getElementById('room-detail').value.trim()
+            detail: document.getElementById('room-detail').value.trim(),
+            // Add owner information
+            owner_name: document.getElementById('owner-name').value.trim(),
+            owner_phone: document.getElementById('owner-phone').value.trim(),
+            owner_email: document.getElementById('owner-email').value.trim()
         };
         
         // Add area if provided

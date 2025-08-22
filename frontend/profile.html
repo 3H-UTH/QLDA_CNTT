@@ -10,19 +10,68 @@
   <body>
     <header id="navbar"></header>
     <main class="container">
-      <section class="section" style="max-width: 520px; margin: 2rem auto">
+      <section class="section" style="max-width: 800px; margin: 2rem auto">
         <h2>Thông tin cá nhân</h2>
+        
         <form id="profileForm">
-          <label>Họ và tên</label>
-          <input class="input" id="fullName" required />
+          <!-- Thông tin cơ bản -->
+          <div style="margin-bottom: 2rem;">
+            <h3 style="color: var(--text-primary); margin-bottom: 1rem; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem;">Thông tin cơ bản</h3>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+              <div>
+                <label>Họ và tên</label>
+                <input class="input" id="fullName" required />
+              </div>
+              <div>
+                <label>Điện thoại</label>
+                <input class="input" id="phone" type="tel" />
+              </div>
+            </div>
+            <label>Email (không thể đổi)</label>
+            <input class="input" type="email" id="email" readonly />
+            <label>Số CCCD/CMND</label>
+            <input class="input" id="idNumber" placeholder="Nhập số căn cước/chứng minh thư" />
+            <label>Địa chỉ thường trú</label>
+            <input class="input" id="address" placeholder="Nhập địa chỉ thường trú" />
+          </div>
           
-          <label>Email</label>
-          <input class="input" type="email" id="email" readonly />
+          <!-- Thông tin nghề nghiệp (chỉ hiển thị cho TENANT) -->
+          <div id="tenantInfo" style="margin-bottom: 2rem; display: none;">
+            <h3 style="color: var(--text-primary); margin-bottom: 1rem; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem;">Thông tin nghề nghiệp</h3>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+              <div>
+                <label>Nghề nghiệp</label>
+                <input class="input" id="occupation" placeholder="Ví dụ: Kỹ sư IT, Giáo viên..." />
+              </div>
+              <div>
+                <label>Nơi làm việc</label>
+                <input class="input" id="workplace" placeholder="Tên công ty/cơ quan" />
+              </div>
+            </div>
+          </div>
           
-          <label>Số điện thoại</label>
-          <input class="input" id="phone" type="tel" />
+          <!-- Thông tin liên hệ khẩn cấp (chỉ hiển thị cho TENANT) -->
+          <div id="emergencyInfo" style="margin-bottom: 2rem; display: none;">
+            <h3 style="color: var(--text-primary); margin-bottom: 1rem; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem;">Liên hệ khẩn cấp</h3>
+            <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 1rem;">
+              <div>
+                <label>Họ tên người liên hệ</label>
+                <input class="input" id="emergencyContact" placeholder="Tên người thân/bạn bè" />
+              </div>
+              <div>
+                <label>Số điện thoại</label>
+                <input class="input" id="emergencyPhone" placeholder="Số điện thoại" />
+              </div>
+              <div>
+                <label>Mối quan hệ</label>
+                <input class="input" id="emergencyRelationship" placeholder="Cha, Mẹ, Anh/Chị..." />
+              </div>
+            </div>
+          </div>
           
-          <button class="btn" type="submit">Cập nhật thông tin</button>
+          <button class="btn btn-primary" type="submit" style="width: 100%;">
+            <i class="fas fa-save"></i> Lưu thông tin
+          </button>
         </form>
       </section>
     </main>
@@ -36,51 +85,96 @@
         const user = requireAuth();
         if (!user) return;
 
-        // Điền thông tin hiện tại
-        qs("#fullName").value = user.fullName || '';
-        qs("#email").value = user.email || '';
-        qs("#phone").value = user.phone || '';
+        // Hiển thị/ẩn thông tin theo role
+        if (user.role === 'TENANT') {
+          document.getElementById('tenantInfo').style.display = 'block';
+          document.getElementById('emergencyInfo').style.display = 'block';
+        }
 
-        qs("#profileForm").addEventListener("submit", async (e) => {
+        // Load thông tin hiện tại
+        loadUserProfile();
+
+        // Xử lý submit form
+        document.getElementById("profileForm").addEventListener("submit", async (e) => {
           e.preventDefault();
-          try {
-            const updatedData = {
-              full_name: qs("#fullName").value,
-              phone: qs("#phone").value
-            };
-
-            const response = await fetch("http://localhost:8000/api/user/profile/", {
-              method: "PATCH",
-              headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${localStorage.getItem('accessToken')}`
-              },
-              body: JSON.stringify(updatedData)
-            });
-
-            if (!response.ok) {
-              const error = await response.json();
-              throw new Error(error.detail || "Không thể cập nhật thông tin");
-            }
-
-            const result = await response.json();
-            console.log('Profile updated:', result);
-
-            // Cập nhật session
-            const currentSession = db.getSession();
-            db.setSession({
-              ...currentSession,
-              fullName: updatedData.full_name,
-              phone: updatedData.phone
-            });
-
-            alert("Cập nhật thông tin thành công!");
-          } catch (err) {
-            console.error('Update failed:', err);
-            alert(err.message);
-          }
+          await updateUserProfile();
         });
       });
+
+      async function loadUserProfile() {
+        try {
+          const user = api.getSession();
+          const data = await api.request(`/tenants/${user.id}/`);
+          
+          // Điền thông tin cơ bản
+          document.getElementById("fullName").value = data.full_name || '';
+          document.getElementById("email").value = data.email || '';
+          document.getElementById("phone").value = data.phone || '';
+          document.getElementById("idNumber").value = data.id_number || '';
+          document.getElementById("address").value = data.address || '';
+          
+          // Điền thông tin nghề nghiệp (chỉ cho TENANT)
+          if (data.role === 'TENANT') {
+            document.getElementById("occupation").value = data.occupation || '';
+            document.getElementById("workplace").value = data.workplace || '';
+            document.getElementById("emergencyContact").value = data.emergency_contact || '';
+            document.getElementById("emergencyPhone").value = data.emergency_phone || '';
+            document.getElementById("emergencyRelationship").value = data.emergency_relationship || '';
+          }
+        } catch (error) {
+          console.error('Failed to load profile:', error);
+          // Fallback to session data
+          const user = api.getSession();
+          if (user) {
+            document.getElementById("fullName").value = user.fullName || user.full_name || '';
+            document.getElementById("email").value = user.email || '';
+            document.getElementById("phone").value = user.phone || '';
+          }
+        }
+      }
+
+      async function updateUserProfile() {
+        try {
+          const user = api.getSession();
+          const updatedData = {
+            full_name: document.getElementById("fullName").value,
+            phone: document.getElementById("phone").value,
+            id_number: document.getElementById("idNumber").value,
+            address: document.getElementById("address").value
+          };
+
+          // Thêm thông tin nghề nghiệp nếu là TENANT
+          if (user.role === 'TENANT') {
+            updatedData.occupation = document.getElementById("occupation").value;
+            updatedData.workplace = document.getElementById("workplace").value;
+            updatedData.emergency_contact = document.getElementById("emergencyContact").value;
+            updatedData.emergency_phone = document.getElementById("emergencyPhone").value;
+            updatedData.emergency_relationship = document.getElementById("emergencyRelationship").value;
+          }
+
+          const result = await api.request(`/tenants/${user.id}/`, {
+            method: 'PATCH',
+            body: JSON.stringify(updatedData)
+          });
+
+          console.log('Profile updated:', result);
+
+          // Cập nhật session
+          const currentSession = api.getSession();
+          const updatedSession = {
+            ...currentSession,
+            fullName: updatedData.full_name,
+            full_name: updatedData.full_name,
+            phone: updatedData.phone
+          };
+          localStorage.setItem('currentUser', JSON.stringify(updatedSession));
+
+          alert("Cập nhật thông tin thành công!");
+        } catch (err) {
+          console.error('Update failed:', err);
+          alert(err.message || 'Có lỗi xảy ra khi cập nhật thông tin');
+        }
+      }
     </script>
   </body>
 </html>
