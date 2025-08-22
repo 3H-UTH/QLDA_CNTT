@@ -1,29 +1,57 @@
 function currentUser() {
   try {
-    // Try API session first, fallback to localStorage
+    // First try to get from API session
     if (window.api && api.getSession) {
-      return api.getSession();
+      const apiUser = api.getSession();
+      if (apiUser) {
+        console.log('Got user from API:', apiUser);
+        return apiUser;
+      }
     }
     
     // Fallback to localStorage
     const userData = localStorage.getItem('currentUser');
-    return userData ? JSON.parse(userData) : null;
+    console.log('Raw currentUser from localStorage:', userData);
+    
+    if (userData) {
+      const parsed = JSON.parse(userData);
+      console.log('Parsed currentUser:', parsed);
+      return parsed;
+    }
+    
+    console.log('No currentUser found');
+    return null;
   } catch (error) {
     console.error('Error getting current user:', error);
     return null;
   }
 }
+
 function requireAuth(roles = null) {
+  console.log('requireAuth called with roles:', roles);
   const u = currentUser();
+  console.log('Current user in requireAuth:', u);
+  
   if (!u) {
+    console.log('No user found, redirecting to login');
     window.location.href =
       "login.html?next=" + encodeURIComponent(location.pathname);
     return null;
   }
-  if (roles && !roles.includes(u.role)) {
-    window.location.href = "index.html";
-    return null;
+  
+  if (roles && Array.isArray(roles)) {
+    console.log('Checking if user role', u.role, 'is in allowed roles:', roles);
+    console.log('includes result:', roles.includes(u.role));
+    
+    if (!roles.includes(u.role)) {
+      console.log('User role not authorized:', u.role, 'Required:', roles);
+      alert(`Bạn không có quyền truy cập. Role hiện tại: ${u.role}, Cần: ${roles.join(', ')}`);
+      window.location.href = "index.html";
+      return null;
+    }
   }
+  
+  console.log('Auth successful for user:', u);
   return u;
 }
 async function login(username, password) {

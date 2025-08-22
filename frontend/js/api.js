@@ -286,14 +286,126 @@ class RentalAPI {
   }
 
   // Meter reading methods
-  async getMeterReadings() {
-    return await this.request('/meter-readings/');
+  async getMeterReadings(params = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    const endpoint = queryString ? `/meter-readings/?${queryString}` : '/meter-readings/';
+    return await this.request(endpoint);
   }
 
   async createMeterReading(readingData) {
     return await this.request('/meter-readings/', {
       method: 'POST',
       body: JSON.stringify(readingData),
+    });
+  }
+
+  async updateMeterReading(id, readingData) {
+    return await this.request(`/meter-readings/${id}/`, {
+      method: 'PUT',
+      body: JSON.stringify(readingData),
+    });
+  }
+
+  async deleteMeterReading(id) {
+    return await this.request(`/meter-readings/${id}/`, {
+      method: 'DELETE',
+    });
+  }
+
+  // Invoice methods
+  async getInvoices(params = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    const endpoint = queryString ? `/invoices/?${queryString}` : '/invoices/';
+    return await this.request(endpoint);
+  }
+
+  async getInvoice(id) {
+    return await this.request(`/invoices/${id}/`);
+  }
+
+  async createInvoice(invoiceData) {
+    return await this.request('/invoices/', {
+      method: 'POST',
+      body: JSON.stringify(invoiceData),
+    });
+  }
+
+  async generateInvoice(generateData) {
+    return await this.request('/invoices/generate/', {
+      method: 'POST',
+      body: JSON.stringify(generateData),
+    });
+  }
+
+  async updateInvoice(id, invoiceData) {
+    return await this.request(`/invoices/${id}/`, {
+      method: 'PATCH',
+      body: JSON.stringify(invoiceData),
+    });
+  }
+
+  async sendInvoice(id) {
+    return await this.request(`/invoices/${id}/send/`, {
+      method: 'PATCH',
+    });
+  }
+
+  async markInvoicePaid(id) {
+    return await this.request(`/invoices/${id}/mark-paid/`, {
+      method: 'PATCH',
+    });
+  }
+
+  async markInvoiceOverdue(id) {
+    return await this.request(`/invoices/${id}/mark-overdue/`, {
+      method: 'PATCH',
+    });
+  }
+
+  async cancelInvoice(id) {
+    return await this.request(`/invoices/${id}/cancel/`, {
+      method: 'PATCH',
+    });
+  }
+
+  // Reports methods
+  async getRevenueReport(fromPeriod, toPeriod) {
+    return await this.request(`/reports/revenue/?from=${fromPeriod}&to=${toPeriod}`);
+  }
+
+  async getArrearsReport(period = null) {
+    const endpoint = period ? `/reports/arrears/?period=${period}` : '/reports/arrears/';
+    return await this.request(endpoint);
+  }
+
+  // Tenant methods
+  async getTenants(params = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    const endpoint = queryString ? `/tenants/?${queryString}` : '/tenants/';
+    return await this.request(endpoint);
+  }
+
+  async getTenant(id) {
+    return await this.request(`/tenants/${id}/`);
+  }
+
+  async createTenant(tenantData) {
+    return await this.request('/tenants/', {
+      method: 'POST',
+      body: JSON.stringify(tenantData),
+    });
+  }
+
+  async updateTenant(id, tenantData) {
+    return await this.request(`/tenants/${id}/`, {
+      method: 'PATCH',
+      body: JSON.stringify(tenantData),
+    });
+  }
+
+  async deleteTenant(id) {
+    return await this.request(`/tenants/${id}/`, {
+      method: 'DELETE',
     });
   }
 }

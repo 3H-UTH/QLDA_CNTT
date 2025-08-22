@@ -1,86 +1,258 @@
 
-document.addEventListener('DOMContentLoaded',()=>{
-  const u=requireAuth(['admin']); if(!u) return;
-  function refreshRooms(){
-    const list=getRooms(); const tbody=qs('#room-tbody');
-    tbody.innerHTML=list.map(r=>`
-      <tr>
-        <td>${r.title}</td><td>${r.location}</td><td>${fmtVND(r.price)}</td>
-        <td><span class="badge">${r.status}</span></td>
-        <td>
-          <a class="btn secondary" href="room.html?id=${r.id}">Xem</a>
-          <button class="btn secondary btn-edit" data-id="${r.id}">Sửa</button>
-          <button class="btn danger btn-del" data-id="${r.id}">Xoá</button>
-        </td>
-      </tr>`).join('');
-    qsa('.btn-del').forEach(b=>b.addEventListener('click',()=>{
-      const id=b.getAttribute('data-id'); setRooms(getRooms().filter(x=>x.id!==id)); refreshRooms();
-    }));
-    qsa('.btn-edit').forEach(b=>b.addEventListener('click',()=>{
-      const id=b.getAttribute('data-id'); const r=getRooms().find(x=>x.id===id); if(!r) return;
-      qs('#roomId').value=r.id; qs('#title').value=r.title; qs('#location').value=r.location;
-      qs('#price').value=r.price; qs('#status').value=r.status; qs('#description').value=r.description;
-    }));
-  }
-  qs('#roomForm').addEventListener('submit',e=>{
-    e.preventDefault();
-    const id=qs('#roomId').value||uid();
-    const item={ id, title:qs('#title').value.trim(), location:qs('#location').value.trim(),
-      price:parseInt(qs('#price').value||'0',10), status:qs('#status').value,
-      description:qs('#description').value.trim(), images:['assets/placeholder.svg'], landlordId:u.id };
-    const list=getRooms(); const idx=list.findIndex(x=>x.id===id); if(idx>=0) list[idx]=item; else list.push(item);
-    setRooms(list); e.target.reset(); refreshRooms();
-  });
-  refreshRooms();
+// Admin Dashboard JavaScript
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Admin page loaded, checking authentication...');
+    
+    // Debug: Check what's in localStorage
+    console.log('Access token:', localStorage.getItem('access_token'));
+    console.log('Current user:', localStorage.getItem('currentUser'));
+    
+    // Check authentication using the existing auth system
+    const user = requireAuth(['OWNER']);
+    console.log('requireAuth result:', user);
+    
+    if (!user) {
+        console.log('No user returned from requireAuth, should redirect to login');
+        return;
+    }
 
-  function refreshRequests(){
-    const reqs=getRequests().sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt)); const tbody=qs('#req-tbody');
-    if(reqs.length===0){ tbody.innerHTML='<tr><td colspan="6" class="help">Chưa có yêu cầu.</td></tr>'; return; }
-    tbody.innerHTML=reqs.map(r=>{
-      const room=getRooms().find(x=>x.id===r.roomId); const tenant=getUsers().find(x=>x.id===r.tenantId);
-      return `<tr>
-        <td>${room?room.title:r.roomId}</td>
-        <td>${tenant?tenant.fullName:r.tenantId} (${tenant?tenant.email:''})</td>
-        <td>${r.message||''}</td>
-        <td>${new Date(r.createdAt).toLocaleString('vi-VN')}</td>
-        <td><span class="badge">${r.status}</span></td>
-        <td>${r.status==='pending'?
-            '<button class="btn btn-approve" data-id="'+r.id+'">Duyệt</button> <button class="btn secondary btn-reject" data-id="'+r.id+'">Từ chối</button>'
-            :''}</td>
-      </tr>`;
-    }).join('');
-    qsa('.btn-approve').forEach(b=>b.addEventListener('click',()=>handleApprove(b.getAttribute('data-id'))));
-    qsa('.btn-reject').forEach(b=>b.addEventListener('click',()=>handleReject(b.getAttribute('data-id'))));
-  }
-  function handleApprove(id){
-    const reqs=getRequests(); const i=reqs.findIndex(x=>x.id===id); if(i<0) return; reqs[i].status='approved'; setRequests(reqs);
-    const room=getRooms().find(x=>x.id===reqs[i].roomId); const start=new Date().toISOString().slice(0,10);
-    const cts=getContracts(); cts.push({ id:uid(), roomId:reqs[i].roomId, tenantId:reqs[i].tenantId, startDate:start, endDate:'', status:'active', monthlyRent:room?room.price:0 });
-    setContracts(cts); alert('Đã duyệt và tạo hợp đồng!'); refreshRequests(); refreshContracts();
-  }
-  function handleReject(id){
-    const reqs=getRequests(); const i=reqs.findIndex(x=>x.id===id); if(i<0) return; reqs[i].status='rejected'; setRequests(reqs); refreshRequests();
-  }
-  refreshRequests();
+    console.log('Admin page loaded for user:', user);
 
-  function refreshContracts(){
-    const cts=getContracts(); const tbody=qs('#contract-tbody');
-    if(cts.length===0){ tbody.innerHTML='<tr><td colspan="6" class="help">Chưa có hợp đồng.</td></tr>'; return; }
-    tbody.innerHTML=cts.map(c=>{
-      const room=getRooms().find(x=>x.id===c.roomId); const tenant=getUsers().find(x=>x.id===c.tenantId);
-      return `<tr>
-        <td>${room?room.title:c.roomId}</td>
-        <td>${tenant?tenant.fullName:c.tenantId}</td>
-        <td>${fmtVND(c.monthlyRent)}</td>
-        <td>${c.startDate} → ${c.endDate||'-'}</td>
-        <td><span class="badge">${c.status}</span></td>
-        <td>${c.status==='active'?'<button class="btn secondary btn-complete" data-id="'+c.id+'">Kết thúc</button>':''}</td>
-      </tr>`;
-    }).join('');
-    qsa('.btn-complete').forEach(b=>b.addEventListener('click',()=>{
-      const id=b.getAttribute('data-id'); const list=getContracts(); const i=list.findIndex(x=>x.id===id);
-      if(i>=0){ list[i].status='completed'; list[i].endDate=new Date().toISOString().slice(0,10); setContracts(list); refreshContracts(); }
-    }));
-  }
-  refreshContracts();
+    // Initialize
+    loadRooms();
+    loadRequests(); 
+    loadContracts();    // Event listeners
+    document.getElementById('roomForm').addEventListener('submit', handleRoomSubmit);
+
+    // Room management
+    async function loadRooms() {
+        try {
+            console.log('Loading rooms...');
+            console.log('Current token:', localStorage.getItem('access_token'));
+            
+            const rooms = await api.getRooms();
+            console.log('Rooms loaded:', rooms);
+            displayRooms(rooms);
+        } catch (error) {
+            console.error('Error loading rooms:', error);
+            
+            // Check if it's an auth error
+            if (error.message && error.message.includes('401')) {
+                alert('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
+                window.location.href = 'login.html';
+                return;
+            }
+            
+            // Display error but don't block the interface
+            displayRooms([]);
+            console.log('Showing empty room list due to error');
+        }
+    }
+
+    function displayRooms(rooms) {
+        const tbody = document.getElementById('room-tbody');
+        tbody.innerHTML = '';
+
+        if (rooms.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">Chưa có phòng nào</td></tr>';
+            return;
+        }
+
+        rooms.forEach(room => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${room.name}</td>
+                <td>${room.address || 'Chưa cập nhật'}</td>
+                <td>${formatCurrency(room.base_price)}</td>
+                <td>
+                    <span class="badge ${room.status === 'EMPTY' ? 'success' : room.status === 'RENTED' ? 'warning' : 'secondary'}">
+                        ${room.status === 'EMPTY' ? 'Trống' : room.status === 'RENTED' ? 'Đã thuê' : 'Bảo trì'}
+                    </span>
+                </td>
+                <td>
+                    <div class="btn-group">
+                        <button class="btn-small" onclick="viewRoom(${room.id})">Xem</button>
+                        <button class="btn-small" onclick="editRoom(${room.id})">Sửa</button>
+                        <button class="btn-small danger" onclick="deleteRoom(${room.id})">Xóa</button>
+                    </div>
+                </td>
+            `;
+            tbody.appendChild(row);
+        });
+    }
+
+    async function handleRoomSubmit(e) {
+        e.preventDefault();
+        
+        const formData = {
+            name: document.getElementById('title').value.trim(),
+            address: document.getElementById('location').value.trim(),
+            base_price: parseFloat(document.getElementById('price').value) || 0,
+            status: document.getElementById('status').value.toUpperCase(),
+            detail: document.getElementById('description').value.trim(),
+            area_m2: 25.0,  // Default value
+            bedrooms: 1,    // Default value  
+            bathrooms: 1    // Default value
+        };
+
+        if (!formData.name || !formData.address || !formData.base_price) {
+            showError('Vui lòng điền đầy đủ thông tin');
+            return;
+        }
+
+        try {
+            const roomId = document.getElementById('roomId').value;
+            
+            if (roomId) {
+                await api.updateRoom(roomId, formData);
+                showSuccess('Cập nhật phòng thành công');
+            } else {
+                await api.createRoom(formData);
+                showSuccess('Thêm phòng mới thành công');
+            }
+            
+            document.getElementById('roomForm').reset();
+            document.getElementById('roomId').value = '';
+            loadRooms();
+        } catch (error) {
+            console.error('Error saving room:', error);
+            showError(error.message || 'Không thể lưu thông tin phòng');
+        }
+    }
+
+    // Contract management (placeholder - extend as needed)
+    async function loadRequests() {
+        // This would load rental requests if the API exists
+        const tbody = document.getElementById('req-tbody');
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center;">Chức năng đang phát triển</td></tr>';
+    }
+
+    async function loadContracts() {
+        try {
+            console.log('Loading contracts...');
+            const contracts = await api.getContracts();
+            console.log('Contracts loaded:', contracts);
+            displayContracts(contracts);
+        } catch (error) {
+            console.error('Error loading contracts:', error);
+            
+            // Display empty contracts table
+            const tbody = document.getElementById('contract-tbody');
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align: center;">Đang tải dữ liệu...</td></tr>';
+        }
+    }
+
+    function displayContracts(contracts) {
+        const tbody = document.getElementById('contract-tbody');
+        tbody.innerHTML = '';
+
+        if (contracts.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align: center;">Chưa có hợp đồng nào</td></tr>';
+            return;
+        }
+
+        contracts.forEach(contract => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${contract.room ? contract.room.name : 'N/A'}</td>
+                <td>${contract.tenant ? contract.tenant.user.first_name + ' ' + contract.tenant.user.last_name : 'N/A'}</td>
+                <td>${formatCurrency(contract.monthly_rent)}</td>
+                <td>${formatDate(contract.start_date)} → ${contract.end_date ? formatDate(contract.end_date) : 'Không xác định'}</td>
+                <td>
+                    <span class="badge ${contract.status === 'ACTIVE' ? 'success' : 'secondary'}">
+                        ${contract.status === 'ACTIVE' ? 'Hoạt động' : contract.status}
+                    </span>
+                </td>
+                <td>
+                    <div class="btn-group">
+                        <button class="btn-small" onclick="viewContract(${contract.id})">Xem</button>
+                        ${contract.status === 'ACTIVE' ? 
+                            `<button class="btn-small warning" onclick="endContract(${contract.id})">Kết thúc</button>` : 
+                            ''
+                        }
+                    </div>
+                </td>
+            `;
+            tbody.appendChild(row);
+        });
+    }
+
+    // Global functions
+    window.viewRoom = function(roomId) {
+        window.location.href = `room.html?id=${roomId}`;
+    };
+
+    window.editRoom = async function(roomId) {
+        try {
+            const room = await api.getRoom(roomId);
+            
+            document.getElementById('roomId').value = room.id;
+            document.getElementById('title').value = room.name;
+            document.getElementById('location').value = room.address;
+            document.getElementById('price').value = room.price;
+            document.getElementById('status').value = room.status.toLowerCase();
+            document.getElementById('description').value = room.description || '';
+        } catch (error) {
+            console.error('Error loading room:', error);
+            showError('Không thể tải thông tin phòng');
+        }
+    };
+
+    window.deleteRoom = async function(roomId) {
+        if (!confirm('Bạn có chắc chắn muốn xóa phòng này?')) {
+            return;
+        }
+
+        try {
+            await api.deleteRoom(roomId);
+            showSuccess('Xóa phòng thành công');
+            loadRooms();
+        } catch (error) {
+            console.error('Error deleting room:', error);
+            showError(error.message || 'Không thể xóa phòng');
+        }
+    };
+
+    window.viewContract = function(contractId) {
+        // Navigate to contract details
+        window.location.href = `contracts.html?id=${contractId}`;
+    };
+
+    window.endContract = async function(contractId) {
+        if (!confirm('Bạn có chắc chắn muốn kết thúc hợp đồng này?')) {
+            return;
+        }
+
+        try {
+            await api.updateContract(contractId, { 
+                status: 'TERMINATED',
+                end_date: new Date().toISOString().split('T')[0]
+            });
+            showSuccess('Đã kết thúc hợp đồng');
+            loadContracts();
+        } catch (error) {
+            console.error('Error ending contract:', error);
+            showError(error.message || 'Không thể kết thúc hợp đồng');
+        }
+    };
+
+    // Utility functions
+    function formatCurrency(amount) {
+        return new Intl.NumberFormat('vi-VN', {
+            style: 'currency',
+            currency: 'VND'
+        }).format(amount);
+    }
+
+    function formatDate(dateString) {
+        return new Date(dateString).toLocaleDateString('vi-VN');
+    }
+
+    function showSuccess(message) {
+        alert(message);
+    }
+
+    function showError(message) {
+        alert('Lỗi: ' + message);
+    }
 });

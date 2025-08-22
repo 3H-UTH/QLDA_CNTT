@@ -42,12 +42,65 @@
       </section>
       <section class="section">
         <h2>Hồ sơ cá nhân</h2>
-        <form id="profileForm" style="max-width: 520px">
-          <label>Họ và tên</label><input class="input" id="fullName" />
-          <label>Điện thoại</label><input class="input" id="phone" />
-          <label>Email (không thể đổi trong demo)</label
-          ><input class="input" id="email" disabled />
-          <button class="btn" type="submit">Lưu</button>
+        <form id="profileForm" style="max-width: 600px">
+          <!-- Thông tin cơ bản -->
+          <div style="margin-bottom: 2rem;">
+            <h3 style="color: var(--text-primary); margin-bottom: 1rem; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem;">Thông tin cơ bản</h3>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+              <div>
+                <label>Họ và tên</label>
+                <input class="input" id="fullName" />
+              </div>
+              <div>
+                <label>Điện thoại</label>
+                <input class="input" id="phone" />
+              </div>
+            </div>
+            <label>Email (không thể đổi)</label>
+            <input class="input" id="email" disabled />
+            <label>Số CCCD/CMND</label>
+            <input class="input" id="idNumber" placeholder="Nhập số căn cước/chứng minh thư" />
+            <label>Địa chỉ thường trú</label>
+            <input class="input" id="address" placeholder="Nhập địa chỉ thường trú" />
+          </div>
+          
+          <!-- Thông tin nghề nghiệp -->
+          <div style="margin-bottom: 2rem;">
+            <h3 style="color: var(--text-primary); margin-bottom: 1rem; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem;">Thông tin nghề nghiệp</h3>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+              <div>
+                <label>Nghề nghiệp</label>
+                <input class="input" id="occupation" placeholder="Ví dụ: Kỹ sư IT, Giáo viên..." />
+              </div>
+              <div>
+                <label>Nơi làm việc</label>
+                <input class="input" id="workplace" placeholder="Tên công ty/cơ quan" />
+              </div>
+            </div>
+          </div>
+          
+          <!-- Thông tin liên hệ khẩn cấp -->
+          <div style="margin-bottom: 2rem;">
+            <h3 style="color: var(--text-primary); margin-bottom: 1rem; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem;">Liên hệ khẩn cấp</h3>
+            <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 1rem;">
+              <div>
+                <label>Họ tên người liên hệ</label>
+                <input class="input" id="emergencyContact" placeholder="Tên người thân/bạn bè" />
+              </div>
+              <div>
+                <label>Số điện thoại</label>
+                <input class="input" id="emergencyPhone" placeholder="Số điện thoại" />
+              </div>
+              <div>
+                <label>Mối quan hệ</label>
+                <input class="input" id="emergencyRelationship" placeholder="Cha, Mẹ, Anh/Chị..." />
+              </div>
+            </div>
+          </div>
+          
+          <button class="btn btn-primary" type="submit" style="width: 100%;">
+            <i class="fas fa-save"></i> Lưu thông tin
+          </button>
         </form>
       </section>
     </main>

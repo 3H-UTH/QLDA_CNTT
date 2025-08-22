@@ -151,16 +151,38 @@ function renderRooms(rooms) {
 
 // Add rent now handler
 function handleRentNow(roomId) {
-  // Check if user is logged in
-  const user = currentUser();
-  if (!user) {
+  console.log('handleRentNow called for room:', roomId);
+  
+  // Simple check - just check if currentUser exists in localStorage
+  const localStorageUser = localStorage.getItem('currentUser');
+  console.log('localStorage currentUser:', localStorageUser);
+  
+  if (!localStorageUser) {
+    console.log('No user found in localStorage, showing login alert');
     alert('Vui lòng đăng nhập để thuê phòng');
     window.location.href = 'login.html';
     return;
   }
   
-  // Redirect to room details for booking
-  window.location.href = `room.html?id=${roomId}&action=rent`;
+  try {
+    const user = JSON.parse(localStorageUser);
+    console.log('Parsed user:', user);
+    
+    if (!user || !user.id) {
+      console.log('Invalid user data, showing login alert');
+      alert('Vui lòng đăng nhập để thuê phòng');
+      window.location.href = 'login.html';
+      return;
+    }
+    
+    console.log('User found, redirecting to room details');
+    // Redirect to room details for booking
+    window.location.href = `room.html?id=${roomId}&action=rent`;
+  } catch (error) {
+    console.error('Error parsing user data:', error);
+    alert('Vui lòng đăng nhập để thuê phòng');
+    window.location.href = 'login.html';
+  }
 }
 async function applySearch() {
   const kw = qs("#kw").value.trim().toLowerCase();
