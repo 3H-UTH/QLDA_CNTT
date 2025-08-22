@@ -126,3 +126,24 @@ class Invoice(models.Model):
 
     def __str__(self):
         return f"Invoice {self.id} - {self.contract} - {self.period} - {self.total}đ"
+
+class Payment(models.Model):
+    CASH = "CASH"
+    BANK = "BANK"
+    ONLINE = "ONLINE"
+    METHODS = [(CASH, "Tiền mặt"), (BANK, "Chuyển khoản"), (ONLINE, "Online")]
+
+    PENDING = "PENDING"
+    CONFIRMED = "CONFIRMED"
+    FAILED = "FAILED"
+    STATUSES = [(PENDING, "Chờ xác nhận"), (CONFIRMED, "Đã xác nhận"), (FAILED, "Thất bại")]
+
+    invoice = models.ForeignKey("core.Invoice", on_delete=models.CASCADE, related_name="payments")
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
+    method = models.CharField(max_length=10, choices=METHODS, default=BANK)
+    status = models.CharField(max_length=10, choices=STATUSES, default=CONFIRMED)
+    paid_at = models.DateTimeField(auto_now_add=True)
+    note = models.CharField(max_length=255, blank=True)
+
+    class Meta:
+        ordering = ["-paid_at"]

@@ -4,11 +4,11 @@ from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated 
 from rest_framework.views import APIView
 from django_filters.rest_framework import DjangoFilterBackend
-from .models import Room, Contract, MeterReading, Invoice, Tenant
+from .models import Room, Contract, MeterReading, Invoice, Tenant, Payment
 from .serializers import (
     RoomSerializer, ContractSerializer, ContractCreateSerializer, 
     MeterReadingSerializer, InvoiceSerializer, InvoiceGenerateSerializer,
-    TenantSerializer
+    TenantSerializer, PaymentSerializer
 )
 from drf_spectacular.utils import extend_schema_view, extend_schema, OpenApiParameter
 from .permissions import IsOwnerRole, TenantSelfManagePermission
@@ -436,3 +436,22 @@ class TenantViewSet(viewsets.ModelViewSet):
     filterset_fields = ["user"]     # ?user=123
     search_fields = ["user__full_name","user__email","phone","id_number"]  # ?search=nguyen
     ordering_fields = ["id","user__full_name"]
+
+
+@extend_schema_view(
+    list=extend_schema(tags=["Payments"]),
+    retrieve=extend_schema(tags=["Payments"]),
+    create=extend_schema(tags=["Payments"]),
+    update=extend_schema(tags=["Payments"]),
+    partial_update=extend_schema(tags=["Payments"]),
+    destroy=extend_schema(tags=["Payments"]),
+)
+class PaymentViewSet(viewsets.ModelViewSet):
+    queryset = Payment.objects.select_related("invoice").all()
+    serializer_class = PaymentSerializer
+    permission_classes = [IsOwnerRole]
+
+    filter_backends = [DjangoFilterBackend, filters.OrderingFilter, filters.SearchFilter]
+    filterset_fields = ["invoice", "method", "status"]
+    ordering_fields = ["paid_at", "amount", "id"]
+    search_fields = ["note"]

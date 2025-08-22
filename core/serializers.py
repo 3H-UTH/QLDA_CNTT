@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Room, Contract, MeterReading, Invoice, Tenant
+from .models import Room, Contract, MeterReading, Invoice, Tenant, Payment
 from drf_spectacular.utils import extend_schema_field
 from decimal import Decimal
 
@@ -249,3 +249,37 @@ class TenantSerializer(serializers.ModelSerializer):
         if value and not value.replace("+", "").replace("-", "").replace(" ", "").isdigit():
             raise serializers.ValidationError("Số điện thoại không hợp lệ.")
         return value
+    
+
+class PaymentSerializer(serializers.ModelSerializer):
+    invoice_total = serializers.DecimalField(source="invoice.total", max_digits=12, decimal_places=2, read_only=True)
+    class Meta:
+        model = Payment
+        fields = ["id","invoice","invoice_total","amount","method","status","paid_at","note"]
+        read_only_fields = ["paid_at"]
+
+    def validate(self, attrs):
+        inv: Invoice = attrs["invoice"]
+        if inv.status in ("CANCELLED",):
+            raise serializers.ValidationError({"invoice": "Hóa đơn đã bị hủy."})
+        # optional: không cho tạo payment nếu đã PAID
+        return attrs
+
+    def create(self, validated_data):
+        payment = super().create(validated_data)
+        self._recompute_invoice_status(payment.invoice)
+        return payment
+
+    def update(self, instance, validated_data):
+        res = super().update(instance, validated_data)
+        self._recompute_invoice_status(instance.invoice)
+        return res
+
+    def _recompute_invoice_status(self, invoice: Invoice):
+        paid = sum(p.amount for p in invoice.payments.filter(status="CONFIRMED"))
+        # nếu cần làm tròn: paid = Decimal(paid).quantize(Decimal("0.01"))
+        if paid >= invoice.total and invoice.status not in ("CANCELLED",):
+            invoice.status = "PAID"
+        elif invoice.status == "PAID" and paid < invoice.total:
+            invoice.status = "UNPAID"
+        invoice.save(update_fields=["status"])

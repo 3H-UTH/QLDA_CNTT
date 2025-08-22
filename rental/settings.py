@@ -115,6 +115,7 @@ SPECTACULAR_SETTINGS = {
         {"name": "Rooms", "description": "Quản lý phòng trọ"},
         {"name": "Contracts", "description": "Hợp đồng thuê & trả phòng"},
         {"name":"Readings","description":"Nhập chỉ số điện nước theo kỳ"},
+        {"name": "Payments", "description": "Quản lý thanh toán (ghi nhận giao dịch cho hóa đơn)"},
     ],
     "ENUM_NAME_OVERRIDES": {
         "Status094Enum": "ContractStatusEnum",  # Fix enum naming collision
