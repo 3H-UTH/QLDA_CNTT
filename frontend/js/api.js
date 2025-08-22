@@ -285,6 +285,19 @@ class RentalAPI {
     });
   }
 
+  async updateContract(id, contractData) {
+    return await this.request(`/contracts/${id}/`, {
+      method: 'PATCH',
+      body: JSON.stringify(contractData),
+    });
+  }
+
+  async deleteContract(id) {
+    return await this.request(`/contracts/${id}/`, {
+      method: 'DELETE',
+    });
+  }
+
   // Meter reading methods
   async getMeterReadings(params = {}) {
     const queryString = new URLSearchParams(params).toString();

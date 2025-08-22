@@ -188,25 +188,41 @@ function renderRoom(r) {
       <button class="btn" type="submit">Gửi yêu cầu thuê</button>
     </form>
     <p class="help">Yêu cầu sẽ được gửi đến hệ thống quản lý.</p>`;
+    
     qs("#reqForm").addEventListener("submit", async (e) => {
       e.preventDefault();
-      const msg = qs("#message").value.trim();
-      try {
-        // Create contract request via API
-        const contractData = {
-          room: r.id,
-          tenant: u.id,
-          notes: msg,
-          status: 'PENDING'
-        };
-        
-        await api.createContract(contractData);
-        alert("Đã gửi yêu cầu thuê phòng!");
-        window.location.href = "dashboard.html";
-      } catch (error) {
-        console.error('Error creating contract request:', error);
-        alert("Có lỗi xảy ra khi gửi yêu cầu: " + error.message);
-      }
+      
+      // Validate tenant information before sending request
+      await validateBeforeRental(async (profile) => {
+        // User has all required info, proceed with rental request
+        const msg = qs("#message").value.trim();
+        try {
+          const contractData = {
+            room: r.id,
+            notes: msg
+          };
+          
+          await api.createContract(contractData);
+          
+          // Send notification to owners (simulate - in real app this would be done on backend)
+          if (window.notificationSystem) {
+            const user = currentUser();
+            window.notificationSystem.notifyRentalRequest(
+              user.full_name || user.username, 
+              r.name || `Phòng ${r.id}`
+            );
+          }
+          
+          alert("Đã gửi yêu cầu thuê phòng!");
+          window.location.href = "dashboard.html";
+        } catch (error) {
+          console.error('Error creating contract request:', error);
+          alert("Có lỗi xảy ra khi gửi yêu cầu: " + error.message);
+        }
+      }, (validation) => {
+        // Validation failed, error already shown by validateBeforeRental
+        console.log('Validation failed:', validation);
+      });
     });
   }
 }

@@ -41,6 +41,15 @@ function renderNavbar() {
           u && u.role === "OWNER"
             ? `<a href="room-management.html" ${window.location.pathname.includes('room-management') ? 'style="color: var(--primary);"' : ''}>
                 <i class="fas fa-building"></i> Quản lý phòng
+              </a>
+              <a href="rental-management.html" ${window.location.pathname.includes('rental-management') ? 'style="color: var(--primary);"' : ''}>
+                <i class="fas fa-handshake"></i> Quản lý thuê phòng
+              </a>
+              <a href="invoice-management.html" ${window.location.pathname.includes('invoice-management') ? 'style="color: var(--primary);"' : ''}>
+                <i class="fas fa-file-invoice"></i> Hóa đơn
+              </a>
+              <a href="reports.html" ${window.location.pathname.includes('reports') ? 'style="color: var(--primary);"' : ''}>
+                <i class="fas fa-chart-bar"></i> Báo cáo
               </a>`
             : ""
         }

@@ -12,7 +12,7 @@ from .serializers import (
     TenantSerializer, PaymentSerializer
 )
 from drf_spectacular.utils import extend_schema_view, extend_schema, OpenApiParameter
-from .permissions import IsOwnerRole, TenantSelfManagePermission
+from .permissions import IsOwnerRole, TenantSelfManagePermission, ContractPermission
 from django.utils import timezone
 from datetime import timedelta
 from django.db.models import Sum, Count, Q
@@ -50,7 +50,7 @@ class RoomViewSet(viewsets.ModelViewSet):
 )
 class ContractViewSet(viewsets.ModelViewSet):
     queryset = Contract.objects.select_related("room","tenant").order_by("-id")
-    permission_classes = [IsOwnerRole]
+    permission_classes = [ContractPermission]
 
     # ✅ filter backends + fields ở CẤP CLASS
     filter_backends = [DjangoFilterBackend, filters.OrderingFilter, filters.SearchFilter]
@@ -58,8 +58,34 @@ class ContractViewSet(viewsets.ModelViewSet):
     search_fields = ["room__name", "tenant__full_name", "tenant__email"]
     ordering_fields = ["start_date", "end_date", "deposit", "id"]
 
+    def get_queryset(self):
+        """Filter contracts based on user role"""
+        queryset = super().get_queryset()
+        user = self.request.user
+        
+        if not user.is_authenticated:
+            return queryset.none()
+            
+        # OWNER can see all contracts
+        if getattr(user, 'role', None) == 'OWNER':
+            return queryset
+            
+        # TENANT can only see their own contracts
+        if getattr(user, 'role', None) == 'TENANT':
+            return queryset.filter(tenant=user)
+            
+        return queryset.none()
+
     def get_serializer_class(self):
         return ContractCreateSerializer if self.action == "create" else ContractSerializer
+
+    def perform_create(self, serializer):
+        """Set tenant to current user for tenant requests"""
+        user = self.request.user
+        if getattr(user, 'role', None) == 'TENANT':
+            serializer.save(tenant=user)
+        else:
+            serializer.save()
 
     @extend_schema(tags=["Contracts"])
     @action(detail=True, methods=["post"], url_path="end")
