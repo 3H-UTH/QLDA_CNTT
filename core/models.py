@@ -126,6 +126,42 @@ class Invoice(models.Model):
     def __str__(self):
         return f"Invoice {self.id} - {self.contract} - {self.period} - {self.total}đ"
 
+class Invoice(models.Model):
+    UNPAID = "UNPAID"
+    PAID = "PAID" 
+    OVERDUE = "OVERDUE"
+    STATUS_CHOICES = [
+        (UNPAID, "UNPAID"),
+        (PAID, "PAID"),
+        (OVERDUE, "OVERDUE")
+    ]
+    
+    contract = models.ForeignKey("core.Contract", on_delete=models.CASCADE, related_name="invoices")
+    period = models.CharField(max_length=7, help_text="Kỳ thanh toán (YYYY-MM)")
+    room_price = models.DecimalField(max_digits=12, decimal_places=2, help_text="Tiền phòng")
+    elec_cost = models.DecimalField(max_digits=12, decimal_places=2, default=0, help_text="Tiền điện")
+    water_cost = models.DecimalField(max_digits=12, decimal_places=2, default=0, help_text="Tiền nước")
+    service_cost = models.DecimalField(max_digits=12, decimal_places=2, default=0, help_text="Phí dịch vụ")
+    total = models.DecimalField(max_digits=12, decimal_places=2, help_text="Tổng tiền")
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default=UNPAID)
+    issued_at = models.DateTimeField(default=timezone.now, help_text="Ngày phát hành")
+    due_date = models.DateField(help_text="Ngày đến hạn thanh toán")
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ("contract", "period")  # mỗi hợp đồng–kỳ chỉ 1 hóa đơn
+        ordering = ["-issued_at"]
+
+    def save(self, *args, **kwargs):
+        # Tự động tính tổng tiền khi lưu
+        self.total = self.room_price + self.elec_cost + self.water_cost + self.service_cost
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"Invoice {self.id} - {self.contract} - {self.period} - {self.total}đ"
+
 class Payment(models.Model):
     CASH = "CASH"
     BANK = "BANK"
