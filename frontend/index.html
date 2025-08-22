@@ -100,6 +100,8 @@
 
     <script src="js/storage.js"></script>
     <script src="js/auth.js"></script>
+    <script src="js/tenant-validation.js"></script>
+    <script src="js/notifications.js"></script>
     <script src="js/main.js"></script>
     <script src="js/api.js"></script>
     <script>
@@ -109,6 +111,30 @@
       if (typeof api === 'undefined' && typeof RentalAPI !== 'undefined') {
         console.log('Creating global API instance');
         window.api = new RentalAPI();
+      }
+
+      // Handle quick rental from room listing
+      async function handleQuickRental(roomId) {
+        const user = currentUser();
+        if (!user) {
+          alert('Vui lòng đăng nhập để thuê phòng');
+          window.location.href = `login.html?next=${encodeURIComponent(window.location.href)}`;
+          return;
+        }
+
+        if (user.role !== 'TENANT') {
+          alert('Chỉ người thuê mới có thể gửi yêu cầu thuê phòng');
+          return;
+        }
+
+        // Validate tenant information before quick rental
+        await validateBeforeRental(async (profile) => {
+          // User has all required info, redirect to room detail page
+          window.location.href = `room.html?id=${roomId}`;
+        }, (validation) => {
+          // Validation failed, error already shown by validateBeforeRental
+          console.log('Validation failed:', validation);
+        });
       }
       
       // Manual room loading function
@@ -226,7 +252,7 @@
                     Xem chi tiết
                   </a>
                   ${room.status === 'EMPTY' ? `
-                    <button class="btn btn-accent" onclick="alert('Vui lòng đăng nhập để thuê phòng')" style="flex: 1; justify-content: center; display: flex; align-items: center; background: var(--accent, #e74c3c); color: white; padding: 0.75rem; border: none; border-radius: 4px; cursor: pointer;">
+                    <button class="btn btn-accent" onclick="handleQuickRental(${room.id})" style="flex: 1; justify-content: center; display: flex; align-items: center; background: var(--accent, #e74c3c); color: white; padding: 0.75rem; border: none; border-radius: 4px; cursor: pointer;">
                       <i class="fas fa-key"></i>
                       Thuê ngay
                     </button>

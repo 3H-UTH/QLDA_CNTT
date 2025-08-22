@@ -39,16 +39,17 @@ class Room(models.Model):
 
 
 class Contract(models.Model):
-    ACTIVE = "ACTIVE"; ENDED = "ENDED"; SUSPENDED = "SUSPENDED"
-    STATUS = [(ACTIVE,"ACTIVE"),(ENDED,"ENDED"),(SUSPENDED,"SUSPENDED")]
+    PENDING = "PENDING"; ACTIVE = "ACTIVE"; ENDED = "ENDED"; SUSPENDED = "SUSPENDED"
+    STATUS = [(PENDING,"PENDING"),(ACTIVE,"ACTIVE"),(ENDED,"ENDED"),(SUSPENDED,"SUSPENDED")]
 
     room = models.ForeignKey("core.Room", on_delete=models.PROTECT, related_name="contracts")
     tenant = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="contracts", limit_choices_to={'role': 'TENANT'})
-    start_date = models.DateField()
+    start_date = models.DateField(null=True, blank=True)
     end_date   = models.DateField(blank=True, null=True)
     deposit = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     billing_cycle = models.CharField(max_length=10, default="MONTHLY")
-    status = models.CharField(max_length=10, choices=STATUS, default=ACTIVE)
+    status = models.CharField(max_length=10, choices=STATUS, default=PENDING)
+    notes = models.TextField(blank=True, default='', help_text="Ghi chú từ tenant khi gửi yêu cầu")
 
     class Meta:
         constraints = [

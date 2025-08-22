@@ -1,0 +1,254 @@
+  <!-- Tab Content: Giao diện quản lý thuê: gồm quản lý yêu cầu thuê và danh sách người thuê -->
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Quản lý thuê phòng - Chủ nhà</title>
+    <link rel="stylesheet" href="css/styles.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+  </head>
+  <body>
+    <header id="navbar"></header>
+    <main class="container">
+      <!-- Tabs Navigation -->
+      <div class="tabs-container">
+        <div class="tabs-header">
+          <h2><i class="fas fa-home"></i> Quản lý thuê phòng</h2>
+          <div class="tabs-nav">
+            <button class="tab-btn active" onclick="switchTab('requests')">
+              <i class="fas fa-clipboard-list"></i> 
+              <span>Yêu cầu thuê</span>
+              <span class="tab-badge" id="pending-badge">0</span>
+            </button>
+            <button class="tab-btn" onclick="switchTab('tenants')">
+              <i class="fas fa-users"></i> 
+              <span>Người thuê</span>
+              <span class="tab-badge" id="tenants-badge">0</span>
+            </button>
+          </div>
+          <div class="view-toggle">
+            <button class="view-btn active" onclick="toggleView('cards')" title="Xem dạng thẻ">
+              <i class="fas fa-th-large"></i>
+            </button>
+            <button class="view-btn" onclick="toggleView('table')" title="Xem dạng bảng">
+              <i class="fas fa-table"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Tab Content: Yêu cầu thuê -->
+        <div id="requests-tab" class="tab-content active">
+          <section class="section">
+            <div class="section-header">
+              <h3><i class="fas fa-clipboard-list"></i> Yêu cầu thuê nhà</h3>
+              <div class="filter-controls">
+                <select id="statusFilter" class="form-control">
+                  <option value="all">Tất cả trạng thái</option>
+                  <option value="PENDING">Chờ xử lý</option>
+                  <option value="ACTIVE">Đã chấp nhận</option>
+                  <option value="ENDED">Đã từ chối</option>
+                </select>
+                <button class="btn btn-secondary" onclick="refreshRequests()">
+                  <i class="fas fa-refresh"></i> Làm mới
+                </button>
+              </div>
+            </div>
+            
+            <div class="stats-cards">
+              <div class="stat-card">
+                <div class="stat-icon pending">
+                  <i class="fas fa-clock"></i>
+                </div>
+                <div class="stat-info">
+                  <div class="stat-value" id="pendingCount">0</div>
+                  <div class="stat-label">Chờ xử lý</div>
+                </div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-icon approved">
+                  <i class="fas fa-check-circle"></i>
+                </div>
+                <div class="stat-info">
+                  <div class="stat-value" id="approvedCount">0</div>
+                  <div class="stat-label">Đã chấp nhận</div>
+                </div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-icon rejected">
+                  <i class="fas fa-times-circle"></i>
+                </div>
+                <div class="stat-info">
+                  <div class="stat-value" id="rejectedCount">0</div>
+                  <div class="stat-label">Đã từ chối</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Modern Cards Layout for Requests -->
+            <div class="requests-grid" id="requests-grid">
+              <div class="loading-message">
+                <i class="fas fa-spinner fa-spin"></i>
+                <p>Đang tải dữ liệu...</p>
+              </div>
+            </div>
+
+            <!-- Compact Table for Mobile/Alternative View -->
+            <div class="table-container" id="requests-table" style="display: none;">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>Phòng</th>
+                    <th>Người thuê</th>
+                    <th>Liên hệ</th>
+                    <th>Trạng thái</th>
+                    <th>Hành động</th>
+                  </tr>
+                </thead>
+                <tbody id="requests-tbody">
+                  <tr>
+                    <td colspan="5" class="help">Đang tải dữ liệu...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+        </div>
+
+        <!-- Tab Content: Danh sách người thuê -->
+        <div id="tenants-tab" class="tab-content">
+          <section class="section">
+            <div class="section-header">
+              <h3><i class="fas fa-users"></i> Danh sách người thuê</h3>
+              <div class="filter-controls">
+                <input type="text" id="tenantSearch" class="form-control" placeholder="Tìm kiếm...">
+                <select id="tenantStatusFilter" class="form-control">
+                  <option value="all">Tất cả</option>
+                  <option value="active">Đang thuê</option>
+                  <option value="inactive">Đã nghỉ</option>
+                </select>
+                <button class="btn btn-secondary" onclick="refreshTenants()">
+                  <i class="fas fa-refresh"></i> Làm mới
+                </button>
+              </div>
+            </div>
+
+            <div class="stats-cards">
+              <div class="stat-card">
+                <div class="stat-icon active-tenant">
+                  <i class="fas fa-user-check"></i>
+                </div>
+                <div class="stat-info">
+                  <div class="stat-value" id="activeTenantCount">0</div>
+                  <div class="stat-label">Đang thuê</div>
+                </div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-icon total-tenant">
+                  <i class="fas fa-users"></i>
+                </div>
+                <div class="stat-info">
+                  <div class="stat-value" id="totalTenantCount">0</div>
+                  <div class="stat-label">Tổng số</div>
+                </div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-icon revenue">
+                  <i class="fas fa-dollar-sign"></i>
+                </div>
+                <div class="stat-info">
+                  <div class="stat-value" id="monthlyRevenue">0₫</div>
+                  <div class="stat-label">Thu nhập/tháng</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Modern Cards Layout for Tenants -->
+            <div class="tenants-grid" id="tenants-grid">
+              <div class="loading-message">
+                <i class="fas fa-spinner fa-spin"></i>
+                <p>Đang tải dữ liệu...</p>
+              </div>
+            </div>
+
+            <!-- Compact Table for Alternative View -->
+            <div class="table-container" id="tenants-table" style="display: none;">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>Người thuê</th>
+                    <th>Phòng</th>
+                    <th>Liên hệ</th>
+                    <th>Trạng thái</th>
+                    <th>Hành động</th>
+                  </tr>
+                </thead>
+                <tbody id="tenants-tbody">
+                  <tr>
+                    <td colspan="5" class="help">Đang tải dữ liệu...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+        </div>
+      </div>
+    </main>
+
+    <!-- Modal chi tiết yêu cầu -->
+    <div id="requestModal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 id="modalTitle">Chi tiết yêu cầu thuê</h3>
+          <span class="close" onclick="closeModal()">&times;</span>
+        </div>
+        <div class="modal-body">
+          <div class="request-details" id="requestDetails">
+            <!-- Chi tiết sẽ được load bằng JS -->
+          </div>
+          <div class="modal-actions">
+            <button class="btn btn-success" id="approveBtn" onclick="approveRequest()">
+              <i class="fas fa-check"></i> Chấp nhận
+            </button>
+            <button class="btn btn-danger" id="rejectBtn" onclick="rejectRequest()">
+              <i class="fas fa-times"></i> Từ chối
+            </button>
+            <button class="btn btn-secondary" onclick="closeModal()">Đóng</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal chi tiết tenant -->
+    <div id="tenantModal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 id="tenantModalTitle">Chi tiết người thuê</h3>
+          <span class="close" onclick="closeTenantModal()">&times;</span>
+        </div>
+        <div class="modal-body">
+          <div class="tenant-details" id="tenantDetails">
+            <!-- Chi tiết sẽ được load bằng JS -->
+          </div>
+          <div class="modal-actions">
+            <button class="btn btn-primary" id="viewContractBtn" onclick="viewTenantContract()">
+              <i class="fas fa-file-contract"></i> Hợp đồng
+            </button>
+            <button class="btn btn-info" id="viewInvoicesBtn" onclick="viewTenantInvoices()">
+              <i class="fas fa-file-invoice"></i> Hóa đơn
+            </button>
+            <button class="btn btn-secondary" onclick="closeTenantModal()">Đóng</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script src="js/storage.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/common.js"></script>
+    <script src="js/notifications.js"></script>
+    <script src="js/main.js"></script>
+    <script src="js/rental-management.js"></script>
+  </body>
+</html>

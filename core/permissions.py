@@ -9,6 +9,46 @@ class IsOwnerRole(BasePermission):
         return getattr(request.user, "role", None) == "OWNER"
 
 
+class ContractPermission(BasePermission):
+    """
+    Permission for contracts:
+    - OWNER: Can do everything
+    - TENANT: Can create rental requests (POST), read their own contracts (GET)
+    """
+    def has_permission(self, request, view):
+        if not request.user or not request.user.is_authenticated:
+            return request.method in SAFE_METHODS
+            
+        user_role = getattr(request.user, "role", None)
+        
+        # OWNER can do everything
+        if user_role == "OWNER":
+            return True
+            
+        # TENANT can create rental requests and read
+        if user_role == "TENANT":
+            return request.method in ['GET', 'POST']
+            
+        # Allow read access for unauthenticated users
+        return request.method in SAFE_METHODS
+
+    def has_object_permission(self, request, view, obj):
+        if not request.user or not request.user.is_authenticated:
+            return False
+            
+        user_role = getattr(request.user, "role", None)
+        
+        # OWNER can access all contracts
+        if user_role == "OWNER":
+            return True
+            
+        # TENANT can only view their own contracts
+        if user_role == "TENANT" and request.method in SAFE_METHODS:
+            return obj.tenant == request.user
+                
+        return False
+
+
 class IsOwnerOrTenantReadOnly(BasePermission):
     """
     OWNER: Có thể làm tất cả
