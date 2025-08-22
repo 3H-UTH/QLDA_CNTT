@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Room, Tenant, Contract, MeterReading, Invoice
+from .models import Room, Contract, MeterReading, Invoice
 
 
 @admin.register(Room)
@@ -10,17 +10,11 @@ class RoomAdmin(admin.ModelAdmin):
     ordering = ['name']
 
 
-@admin.register(Tenant)
-class TenantAdmin(admin.ModelAdmin):
-    list_display = ['user', 'id_number']
-    search_fields = ['user__full_name', 'user__email', 'id_number']
-
-
 @admin.register(Contract)
 class ContractAdmin(admin.ModelAdmin):
     list_display = ['id', 'room', 'tenant', 'start_date', 'end_date', 'status', 'deposit']
     list_filter = ['status', 'billing_cycle', 'start_date']
-    search_fields = ['room__name', 'tenant__user__full_name']
+    search_fields = ['room__name', 'tenant__full_name']
     ordering = ['-start_date']
 
 

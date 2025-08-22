@@ -4,7 +4,8 @@ from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated 
 from rest_framework.views import APIView
 from django_filters.rest_framework import DjangoFilterBackend
-from .models import Room, Contract, MeterReading, Invoice, Tenant, Payment
+from .models import Room, Contract, MeterReading, Invoice, Payment
+from django.contrib.auth import get_user_model
 from .serializers import (
     RoomSerializer, ContractSerializer, ContractCreateSerializer, 
     MeterReadingSerializer, InvoiceSerializer, InvoiceGenerateSerializer,
@@ -17,6 +18,8 @@ from datetime import timedelta
 from django.db.models import Sum, Count, Q
 from django.db.models.functions import TruncMonth
 import re
+
+User = get_user_model()
 
 # ---------- ROOMS ----------
 @extend_schema_view(
@@ -46,13 +49,13 @@ class RoomViewSet(viewsets.ModelViewSet):
     destroy=extend_schema(tags=["Contracts"]),
 )
 class ContractViewSet(viewsets.ModelViewSet):
-    queryset = Contract.objects.select_related("room","tenant","tenant__user").order_by("-id")
+    queryset = Contract.objects.select_related("room","tenant").order_by("-id")
     permission_classes = [IsOwnerRole]
 
     # ✅ filter backends + fields ở CẤP CLASS
     filter_backends = [DjangoFilterBackend, filters.OrderingFilter, filters.SearchFilter]
     filterset_fields = ["status", "room", "tenant", "billing_cycle"]  # ?status=ACTIVE&room=3
-    search_fields = ["room__name", "tenant__user__full_name", "tenant__user__email"]
+    search_fields = ["room__name", "tenant__full_name", "tenant__email"]
     ordering_fields = ["start_date", "end_date", "deposit", "id"]
 
     def get_serializer_class(self):
@@ -100,13 +103,13 @@ class MeterReadingViewSet(viewsets.ModelViewSet):
     destroy=extend_schema(tags=["Invoices"]),
 )
 class InvoiceViewSet(viewsets.ModelViewSet):
-    queryset = Invoice.objects.select_related("contract", "contract__room", "contract__tenant", "contract__tenant__user").order_by("-issued_at")
+    queryset = Invoice.objects.select_related("contract", "contract__room", "contract__tenant").order_by("-issued_at")
     serializer_class = InvoiceSerializer
     permission_classes = [IsAuthenticated]
 
     filter_backends = [DjangoFilterBackend, filters.OrderingFilter, filters.SearchFilter]
     filterset_fields = ["contract", "period", "status"]
-    search_fields = ["contract__room__name", "contract__tenant__user__full_name", "period"]
+    search_fields = ["contract__room__name", "contract__tenant__full_name", "period"]
     ordering_fields = ["issued_at", "due_date", "total", "status"]
 
     def get_queryset(self):
@@ -115,7 +118,7 @@ class InvoiceViewSet(viewsets.ModelViewSet):
         
         # TENANT chỉ xem hóa đơn của mình
         if getattr(user, "role", None) == "TENANT":
-            queryset = queryset.filter(contract__tenant__user=user)
+            queryset = queryset.filter(contract__tenant=user)
         
         return queryset
 
@@ -377,7 +380,7 @@ class ArrearsReportView(APIView):
         base_query = Invoice.objects.filter(
             Q(status=Invoice.UNPAID) | Q(status=Invoice.OVERDUE)
         ).select_related(
-            'contract', 'contract__room', 'contract__tenant', 'contract__tenant__user'
+            'contract', 'contract__room', 'contract__tenant'
         )
         
         # Apply period filter if provided
@@ -405,8 +408,8 @@ class ArrearsReportView(APIView):
                 "invoice_id": invoice.id,
                 "contract_id": invoice.contract.id,
                 "room_name": invoice.contract.room.name,
-                "tenant_name": invoice.contract.tenant.user.full_name,
-                "tenant_email": invoice.contract.tenant.user.email,
+                "tenant_name": invoice.contract.tenant.full_name,
+                "tenant_email": invoice.contract.tenant.email,
                 "period": invoice.period,
                 "total": float(invoice.total),
                 "status": invoice.status,
@@ -428,14 +431,26 @@ class ArrearsReportView(APIView):
     
 @extend_schema(tags=["Tenants"])
 class TenantViewSet(viewsets.ModelViewSet):
-    queryset = Tenant.objects.select_related("user").order_by("id")
+    queryset = User.objects.filter(role=User.TENANT).order_by("id")
     serializer_class = TenantSerializer
     permission_classes = [TenantSelfManagePermission]  # Cho phép tenant tự quản lý profile
 
     filter_backends = [DjangoFilterBackend, filters.OrderingFilter, filters.SearchFilter]
-    filterset_fields = ["user"]     # ?user=123
-    search_fields = ["user__full_name","user__email","phone","id_number"]  # ?search=nguyen
-    ordering_fields = ["id","user__full_name"]
+    filterset_fields = ["is_active"]     # ?is_active=true
+    search_fields = ["full_name","email","phone","id_number"]  # ?search=nguyen
+    ordering_fields = ["id","full_name"]
+
+    def get_queryset(self):
+        """TENANT chỉ thấy được chính mình, OWNER thấy tất cả tenant"""
+        queryset = super().get_queryset()
+        user = self.request.user
+        
+        if getattr(user, "role", None) == "TENANT":
+            # TENANT chỉ thấy chính mình
+            queryset = queryset.filter(id=user.id)
+        # OWNER thấy tất cả tenant
+        
+        return queryset
 
 
 @extend_schema_view(

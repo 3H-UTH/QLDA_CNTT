@@ -1,7 +1,7 @@
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
 from django.contrib.auth.password_validation import validate_password
-from core.models import Tenant
+
 User = get_user_model()
 
 class RegisterSerializer(serializers.ModelSerializer):
@@ -31,11 +31,6 @@ class RegisterSerializer(serializers.ModelSerializer):
         user.username = user.email
         user.set_password(password)
         user.save()
-
-        # 🔗 Tự tạo Tenant profile nếu user là TENANT
-        if user.role == "TENANT":
-            Tenant.objects.get_or_create(user=user)
-
         return user
 
     def validate_full_name(self, value):

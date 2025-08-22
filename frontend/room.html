@@ -107,6 +107,344 @@
         font-size: 0.875rem;
         z-index: 10;
       }
+
+      /* Enhanced status badges */
+      .status-badge {
+        padding: 0.5rem 1rem;
+        border-radius: var(--radius-full);
+        font-weight: 600;
+        font-size: 0.875rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        animation: pulse 2s infinite;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        border: 2px solid transparent;
+      }
+
+      .status-available {
+        background: linear-gradient(135deg, #d4edda, #c3e6cb);
+        color: #155724;
+        border-color: #28a745;
+      }
+
+      .status-available::before {
+        content: "●";
+        color: #28a745;
+        animation: blink 1.5s infinite;
+      }
+
+      .status-rented {
+        background: linear-gradient(135deg, #fff3cd, #ffeaa7);
+        color: #856404;
+        border-color: #ffc107;
+      }
+
+      .status-rented::before {
+        content: "●";
+        color: #ffc107;
+      }
+
+      .status-maintenance {
+        background: linear-gradient(135deg, #f8d7da, #f5c6cb);
+        color: #721c24;
+        border-color: #dc3545;
+      }
+
+      .status-maintenance::before {
+        content: "●";
+        color: #dc3545;
+      }
+
+      @keyframes pulse {
+        0% {
+          transform: scale(1);
+        }
+        50% {
+          transform: scale(1.05);
+        }
+        100% {
+          transform: scale(1);
+        }
+      }
+
+      @keyframes blink {
+        0%, 100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.3;
+        }
+      }
+
+      /* Owner contact card */
+      .owner-contact {
+        background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+        border: 1px solid #dee2e6;
+        border-radius: var(--radius-lg);
+        padding: 1.5rem;
+        margin: 1.5rem 0;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      }
+
+      .owner-contact h3 {
+        color: var(--primary);
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .contact-info {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+      }
+
+      .contact-item {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.75rem;
+        background: white;
+        border-radius: var(--radius);
+        border: 1px solid #e9ecef;
+        transition: all 0.3s ease;
+      }
+
+      .contact-item:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        border-color: var(--primary);
+      }
+
+      .contact-icon {
+        width: 40px;
+        height: 40px;
+        background: var(--primary);
+        color: white;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.1rem;
+      }
+
+      .contact-details {
+        flex: 1;
+      }
+
+      .contact-label {
+        font-size: 0.875rem;
+        color: var(--text-muted);
+        margin-bottom: 0.25rem;
+      }
+
+      .contact-value {
+        font-weight: 600;
+        color: var(--text-primary);
+      }
+
+      .contact-action {
+        background: var(--primary);
+        color: white;
+        border: none;
+        padding: 0.5rem 1rem;
+        border-radius: var(--radius);
+        font-size: 0.875rem;
+        cursor: pointer;
+        transition: background 0.3s;
+      }
+
+      .contact-action:hover {
+        background: var(--primary-dark);
+      }
+
+      @media (max-width: 768px) {
+        .contact-item {
+          flex-direction: column;
+          text-align: center;
+        }
+        
+        .contact-action {
+          width: 100%;
+        }
+      }
+
+      /* Lightbox Modal */
+      .lightbox {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.9);
+        animation: fadeIn 0.3s ease;
+      }
+
+      .lightbox.active {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .lightbox-content {
+        position: relative;
+        max-width: 90%;
+        max-height: 90%;
+        margin: auto;
+        animation: zoomIn 0.3s ease;
+      }
+
+      .lightbox-image {
+        width: 100%;
+        height: auto;
+        max-height: 90vh;
+        object-fit: contain;
+        border-radius: var(--radius-lg);
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+      }
+
+      .lightbox-close {
+        position: absolute;
+        top: -50px;
+        right: 0;
+        color: white;
+        font-size: 40px;
+        font-weight: bold;
+        cursor: pointer;
+        background: none;
+        border: none;
+        padding: 0;
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.2);
+        transition: background 0.3s;
+      }
+
+      .lightbox-close:hover {
+        background: rgba(255, 255, 255, 0.3);
+      }
+
+      .lightbox-nav {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        background: rgba(255, 255, 255, 0.2);
+        color: white;
+        border: none;
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        cursor: pointer;
+        font-size: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: background 0.3s;
+      }
+
+      .lightbox-nav:hover {
+        background: rgba(255, 255, 255, 0.3);
+      }
+
+      .lightbox-nav.prev {
+        left: -70px;
+      }
+
+      .lightbox-nav.next {
+        right: -70px;
+      }
+
+      .lightbox-counter {
+        position: absolute;
+        bottom: -50px;
+        left: 50%;
+        transform: translateX(-50%);
+        color: white;
+        background: rgba(0, 0, 0, 0.5);
+        padding: 0.5rem 1rem;
+        border-radius: var(--radius-full);
+        font-size: 0.875rem;
+      }
+
+      @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+      }
+
+      @keyframes zoomIn {
+        from { 
+          transform: scale(0.5);
+          opacity: 0;
+        }
+        to { 
+          transform: scale(1);
+          opacity: 1;
+        }
+      }
+
+      /* Make gallery images clickable */
+      .gallery-main img {
+        cursor: pointer;
+        transition: transform 0.3s ease;
+      }
+
+      .gallery-main img:hover {
+        transform: scale(1.02);
+      }
+
+      .gallery-indicator img {
+        cursor: pointer;
+        transition: transform 0.3s ease;
+      }
+
+      .gallery-indicator img:hover {
+        transform: scale(1.05);
+      }
+
+      /* Single image clickable */
+      .single-room-image {
+        cursor: pointer;
+        transition: transform 0.3s ease;
+      }
+
+      .single-room-image:hover {
+        transform: scale(1.02);
+      }
+
+      @media (max-width: 768px) {
+        .lightbox-nav {
+          width: 40px;
+          height: 40px;
+          font-size: 16px;
+        }
+
+        .lightbox-nav.prev {
+          left: 10px;
+        }
+
+        .lightbox-nav.next {
+          right: 10px;
+        }
+
+        .lightbox-close {
+          top: 10px;
+          right: 10px;
+        }
+
+        .lightbox-counter {
+          bottom: 10px;
+        }
+      }
     </style>
   </head>
   <body>
@@ -125,6 +463,23 @@
         <div id="room-detail"></div>
       </section>
     </main>
+    
+    <!-- Lightbox Modal -->
+    <div id="lightbox" class="lightbox">
+      <div class="lightbox-content">
+        <button class="lightbox-close" onclick="closeLightbox()">&times;</button>
+        <img id="lightbox-image" class="lightbox-image" src="" alt="">
+        <button class="lightbox-nav prev" onclick="lightboxChangeImage(-1)">
+          <i class="fas fa-chevron-left"></i>
+        </button>
+        <button class="lightbox-nav next" onclick="lightboxChangeImage(1)">
+          <i class="fas fa-chevron-right"></i>
+        </button>
+        <div class="lightbox-counter">
+          <span id="lightbox-current">1</span> / <span id="lightbox-total">1</span>
+        </div>
+      </div>
+    </div>
     
     <script src="js/api.js"></script>
     <script src="js/storage.js"></script>

@@ -82,6 +82,7 @@ class TenantSelfManagePermission(BasePermission):
             
         # TENANT chỉ có thể xem/sửa profile của chính mình
         if user_role == "TENANT":
-            return obj.user == request.user
+            # Cho TenantViewSet, obj là User object
+            return obj == request.user
                 
         return False
