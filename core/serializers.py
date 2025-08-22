@@ -5,10 +5,14 @@ from decimal import Decimal
 
 class RoomSerializer(serializers.ModelSerializer):
     image = serializers.ImageField(required=False, allow_null=True)
+    additional_images = serializers.CharField(required=False, allow_blank=True, write_only=True)
     
     class Meta:
         model = Room
         fields = "__all__"
+        extra_kwargs = {
+            'images': {'read_only': True},  # images field chỉ đọc, sẽ được tạo từ additional_images
+        }
         
     def validate_bedrooms(self, value):
         if value < 1:
@@ -24,6 +28,51 @@ class RoomSerializer(serializers.ModelSerializer):
         if value <= 0:
             raise serializers.ValidationError("Giá thuê phải lớn hơn 0")
         return value
+    
+    def create(self, validated_data):
+        additional_images_json = validated_data.pop('additional_images', None)
+        
+        # Tạo room trước
+        room = super().create(validated_data)
+        
+        # Xử lý nhiều ảnh
+        self._process_images(room, additional_images_json)
+        
+        return room
+    
+    def update(self, instance, validated_data):
+        additional_images_json = validated_data.pop('additional_images', None)
+        
+        # Cập nhật room
+        room = super().update(instance, validated_data)
+        
+        # Xử lý nhiều ảnh nếu có
+        if additional_images_json is not None:
+            self._process_images(room, additional_images_json)
+        
+        return room
+    
+    def _process_images(self, room, additional_images_json):
+        """Xử lý và lưu danh sách ảnh"""
+        import json
+        
+        # Bắt đầu với ảnh chính nếu có
+        all_images = []
+        if room.image:
+            all_images.append(room.image.url)
+        
+        # Thêm các ảnh bổ sung
+        if additional_images_json:
+            try:
+                additional_images = json.loads(additional_images_json)
+                if isinstance(additional_images, list):
+                    all_images.extend(additional_images)
+            except json.JSONDecodeError:
+                pass
+        
+        # Lưu vào field images
+        room.images = all_images
+        room.save(update_fields=['images'])
 
 class ContractCreateSerializer(serializers.ModelSerializer):
     class Meta:

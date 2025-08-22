@@ -39,13 +39,6 @@ function renderNavbar() {
         </a>
         ${
           u && u.role === "OWNER"
-            ? `<a href="admin.html" ${window.location.pathname.includes('admin') ? 'style="color: var(--primary);"' : ''}>
-                <i class="fas fa-cogs"></i> Quản trị
-              </a>`
-            : ""
-        }
-        ${
-          u && u.role === "OWNER"
             ? `<a href="room-management.html" ${window.location.pathname.includes('room-management') ? 'style="color: var(--primary);"' : ''}>
                 <i class="fas fa-building"></i> Quản lý phòng
               </a>`

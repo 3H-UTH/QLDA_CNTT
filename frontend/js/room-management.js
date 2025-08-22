@@ -46,7 +46,7 @@ function setupEventListeners() {
     document.getElementById('search-rooms').addEventListener('input', handleSearch);
     
     // Image upload preview
-    document.getElementById('room-image').addEventListener('change', handleImagePreview);
+    document.getElementById('room-images').addEventListener('change', handleImagesPreview);
     
     // Close modal when clicking outside
     window.addEventListener('click', function(event) {
@@ -157,18 +157,34 @@ function editRoom(roomId) {
     document.getElementById('room-status').value = room.status || 'EMPTY';
     document.getElementById('room-detail').value = room.detail || '';
     
-    // Show current image if exists
-    const preview = document.getElementById('image-preview');
-    const previewImg = document.getElementById('preview-img');
-    if (room.image) {
-        previewImg.src = room.image;
-        preview.style.display = 'block';
-    } else {
-        preview.style.display = 'none';
+    // Show current images if exist
+    const preview = document.getElementById('images-preview');
+    preview.innerHTML = '';
+    
+    if (room.images && Array.isArray(room.images)) {
+        // Show all images
+        room.images.forEach((image, index) => {
+            const imageItem = document.createElement('div');
+            imageItem.className = 'image-item';
+            imageItem.innerHTML = `
+                <img src="${image}" alt="Current ${index + 1}">
+                ${index === 0 ? '<div class="main-badge">Ảnh chính</div>' : ''}
+            `;
+            preview.appendChild(imageItem);
+        });
+    } else if (room.image) {
+        // Show single image as main image
+        const imageItem = document.createElement('div');
+        imageItem.className = 'image-item';
+        imageItem.innerHTML = `
+            <img src="${room.image}" alt="Current main">
+            <div class="main-badge">Ảnh chính</div>
+        `;
+        preview.appendChild(imageItem);
     }
     
     // Clear file input
-    document.getElementById('room-image').value = '';
+    document.getElementById('room-images').value = '';
     
     document.getElementById('room-modal').style.display = 'block';
 }
@@ -179,10 +195,10 @@ function resetRoomForm() {
     document.getElementById('room-bathrooms').value = 1;
     document.getElementById('room-status').value = 'EMPTY';
     
-    // Reset image preview
-    const preview = document.getElementById('image-preview');
+    // Reset images preview
+    const preview = document.getElementById('images-preview');
     if (preview) {
-        preview.style.display = 'none';
+        preview.innerHTML = '';
     }
 }
 
@@ -205,51 +221,12 @@ function hideDeleteModal() {
 async function handleRoomSubmit(event) {
     event.preventDefault();
     
-    const imageFile = document.getElementById('room-image').files[0];
+    const imageFiles = document.getElementById('room-images').files;
     
-    // Nếu có hình ảnh, sử dụng FormData để upload
-    if (imageFile) {
-        const formData = new FormData();
-        formData.append('name', document.getElementById('room-name').value.trim());
-        formData.append('bedrooms', parseInt(document.getElementById('room-bedrooms').value));
-        formData.append('bathrooms', parseInt(document.getElementById('room-bathrooms').value));
-        formData.append('base_price', parseFloat(document.getElementById('room-price').value));
-        formData.append('address', document.getElementById('room-address').value.trim());
-        formData.append('status', document.getElementById('room-status').value);
-        formData.append('detail', document.getElementById('room-detail').value.trim());
-        formData.append('image', imageFile);
+    try {
+        showLoading(true, currentEditingRoom ? 'Đang cập nhật phòng...' : 'Đang tạo phòng mới...');
         
-        // Thêm area nếu có
-        const area = parseFloat(document.getElementById('room-area').value);
-        if (area) {
-            formData.append('area_m2', area);
-        }
-        
-        try {
-            showLoading(true, currentEditingRoom ? 'Đang cập nhật phòng...' : 'Đang tạo phòng mới...');
-            
-            let result;
-            
-            if (currentEditingRoom) {
-                // Update existing room with image
-                result = await api.updateRoomWithFile(currentEditingRoom.id, formData);
-            } else {
-                // Create new room with image
-                result = await api.createRoomWithFile(formData);
-            }
-            
-            hideRoomModal();
-            await loadRooms();
-            showSuccess(currentEditingRoom ? 'Cập nhật phòng thành công!' : 'Thêm phòng thành công!');
-            
-        } catch (error) {
-            console.error('Error saving room:', error);
-            showError('Không thể lưu phòng: ' + error.message);
-        } finally {
-            showLoading(false);
-        }
-    } else {
-        // Không có hình ảnh, dùng JSON như cũ
+        // Prepare room data
         const roomData = {
             name: document.getElementById('room-name').value.trim(),
             bedrooms: parseInt(document.getElementById('room-bedrooms').value),
@@ -260,36 +237,70 @@ async function handleRoomSubmit(event) {
             detail: document.getElementById('room-detail').value.trim()
         };
         
-        // Thêm area nếu có
+        // Add area if provided
         const area = parseFloat(document.getElementById('room-area').value);
         if (area) {
             roomData.area_m2 = area;
         }
         
-        try {
-            showLoading(true, currentEditingRoom ? 'Đang cập nhật phòng...' : 'Đang tạo phòng mới...');
+        let result;
+        
+        // If there are image files, use FormData
+        if (imageFiles && imageFiles.length > 0) {
+            const formData = new FormData();
             
-            let result;
+            // Add all room data to FormData
+            Object.keys(roomData).forEach(key => {
+                formData.append(key, roomData[key]);
+            });
             
-            if (currentEditingRoom) {
-                // Update existing room
-                result = await api.updateRoom(currentEditingRoom.id, roomData);
-            } else {
-                // Create new room
-                result = await api.createRoom(roomData);
+            // Add first image as main image
+            formData.append('image', imageFiles[0]);
+            
+            // Convert additional images to base64 and store as JSON string
+            if (imageFiles.length > 1) {
+                const additionalImages = [];
+                for (let i = 1; i < imageFiles.length; i++) {
+                    const base64 = await convertFileToBase64(imageFiles[i]);
+                    additionalImages.push(base64);
+                }
+                formData.append('additional_images', JSON.stringify(additionalImages));
             }
             
-            hideRoomModal();
-            await loadRooms();
-            showSuccess(currentEditingRoom ? 'Cập nhật phòng thành công!' : 'Thêm phòng thành công!');
-            
-        } catch (error) {
-            console.error('Error saving room:', error);
-            showError('Không thể lưu phòng: ' + error.message);
-        } finally {
-            showLoading(false);
+            if (currentEditingRoom) {
+                result = await api.updateRoomWithFile(currentEditingRoom.id, formData);
+            } else {
+                result = await api.createRoomWithFile(formData);
+            }
+        } else {
+            // No images, use regular JSON API
+            if (currentEditingRoom) {
+                result = await api.updateRoom(currentEditingRoom.id, roomData);
+            } else {
+                result = await api.createRoom(roomData);
+            }
         }
+        
+        hideRoomModal();
+        await loadRooms();
+        showSuccess(currentEditingRoom ? 'Cập nhật phòng thành công!' : 'Thêm phòng thành công!');
+        
+    } catch (error) {
+        console.error('Error saving room:', error);
+        showError('Không thể lưu phòng: ' + error.message);
+    } finally {
+        showLoading(false);
     }
+}
+
+// Helper function to convert file to base64
+function convertFileToBase64(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+    });
 }
 
 async function handleDeleteRoom() {
@@ -421,9 +432,98 @@ function previewImage(input) {
     }
 }
 
+// Handle multiple images preview
+function previewImages(input) {
+    const files = Array.from(input.files);
+    const preview = document.getElementById('images-preview');
+    
+    if (files.length === 0) {
+        preview.innerHTML = '';
+        return;
+    }
+    
+    if (files.length > 10) {
+        alert('Tối đa chỉ được chọn 10 ảnh');
+        input.value = '';
+        return;
+    }
+    
+    preview.innerHTML = '';
+    
+    files.forEach((file, index) => {
+        if (!file.type.startsWith('image/')) {
+            return;
+        }
+        
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const imageItem = document.createElement('div');
+            imageItem.className = 'image-item';
+            imageItem.innerHTML = `
+                <img src="${e.target.result}" alt="Preview ${index + 1}">
+                <button type="button" class="remove-btn" onclick="removeImagePreview(this, ${index})" title="Xóa ảnh">
+                    <i class="fas fa-times"></i>
+                </button>
+                ${index === 0 ? '<div class="main-badge">Ảnh chính</div>' : ''}
+            `;
+            preview.appendChild(imageItem);
+        };
+        reader.readAsDataURL(file);
+    });
+}
+
+// Export to global scope for HTML callbacks
+window.previewImages = previewImages;
+
+function removeImagePreview(button, index) {
+    const input = document.getElementById('room-images');
+    const dt = new DataTransfer();
+    const files = Array.from(input.files);
+    
+    // Remove the file at the specified index
+    files.splice(index, 1);
+    
+    // Rebuild the FileList
+    files.forEach(file => dt.items.add(file));
+    input.files = dt.files;
+    
+    // Re-render preview
+    previewImages(input);
+}
+
+// Export to global scope for HTML callbacks
+window.removeImagePreview = removeImagePreview;
+
+function handleImagesPreview(event) {
+    previewImages(event.target);
+}
+
 // Handle image preview (existing function, keep for compatibility)
 function handleImagePreview(event) {
     previewImage(event.target);
+}
+
+// Upload multiple images
+async function uploadImages(files) {
+    if (!files || files.length === 0) return [];
+    
+    const uploadPromises = Array.from(files).map(async (file) => {
+        try {
+            const base64 = await new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+            return base64;
+        } catch (error) {
+            console.error('Error processing image:', error);
+            return null;
+        }
+    });
+    
+    const results = await Promise.all(uploadPromises);
+    return results.filter(result => result !== null);
 }
 
 // Upload image file (simplified - store as base64 for now)

@@ -111,7 +111,6 @@ python manage.py runserver
 - **login.html** - User authentication
 - **register.html** - User registration
 - **dashboard.html** - User dashboard
-- **admin.html** - Admin panel for owners
 - **room-management.html** - Room CRUD interface
 - **invoice-management.html** - Invoice management
 - **meter-reading.html** - Meter reading input

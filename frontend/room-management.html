@@ -170,6 +170,56 @@
             border: 1px solid var(--border);
         }
         
+        .images-preview {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+        
+        .image-item {
+            position: relative;
+            border: 2px solid var(--border);
+            border-radius: var(--radius);
+            overflow: hidden;
+            background: var(--surface);
+        }
+        
+        .image-item img {
+            width: 120px;
+            height: 120px;
+            object-fit: cover;
+            display: block;
+        }
+        
+        .image-item .remove-btn {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: var(--danger);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            font-size: 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .image-item .main-badge {
+            position: absolute;
+            bottom: 5px;
+            left: 5px;
+            background: var(--primary);
+            color: white;
+            padding: 2px 6px;
+            border-radius: var(--radius);
+            font-size: 10px;
+            font-weight: 500;
+        }
+        
         .close {
             background: none;
             border: none;
@@ -311,12 +361,19 @@
                     </div>
                     
                     <div class="form-group image-upload">
-                        <label>Hình ảnh phòng</label>
-                        <input type="file" id="room-image" class="input" accept="image/*" onchange="previewImage(this)">
-                        <div id="image-preview" class="image-preview" style="display: none;">
-                            <img id="preview-img" alt="Preview">
-                            <p style="margin-top: 0.5rem; color: var(--text-muted); font-size: 0.875rem;">Xem trước hình ảnh</p>
-                        </div>
+                        <label>Hình ảnh phòng *</label>
+                        <input 
+                            type="file" 
+                            id="room-images" 
+                            class="input" 
+                            multiple
+                            accept="image/*" 
+                            onchange="previewImages(this)"
+                        >
+                        <small style="color: var(--text-muted); font-size: 0.875rem; display: block; margin-top: 0.5rem;">
+                            Chọn nhiều ảnh (tối đa 10 ảnh). Ảnh đầu tiên sẽ là ảnh chính hiển thị trong danh sách.
+                        </small>
+                        <div id="images-preview" class="images-preview" style="margin-top: 1rem; display: flex; flex-wrap: wrap; gap: 1rem;"></div>
                     </div>
                 </div>
                 
@@ -362,5 +419,20 @@
     <script src="js/auth.js"></script>
     <script src="js/main.js"></script>
     <script src="js/room-management.js"></script>
+    
+    <script>
+        // Global functions for HTML callbacks
+        function previewImages(input) {
+            if (window.previewImages) {
+                window.previewImages(input);
+            }
+        }
+        
+        function removeImagePreview(button, index) {
+            if (window.removeImagePreview) {
+                window.removeImagePreview(button, index);
+            }
+        }
+    </script>
 </body>
 </html>

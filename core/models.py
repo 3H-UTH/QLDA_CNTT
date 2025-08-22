@@ -18,7 +18,8 @@ class Room(models.Model):
     bathrooms = models.PositiveIntegerField(default=1, help_text="Số phòng tắm")
     address = models.CharField(max_length=255, blank=True, default='', help_text="Địa chỉ phòng")
     detail = models.TextField(blank=True, default='', help_text="Mô tả chi tiết về phòng")
-    image = models.ImageField(upload_to='rooms/', blank=True, null=True, help_text="Hình ảnh phòng")
+    image = models.ImageField(upload_to='rooms/', blank=True, null=True, help_text="Hình ảnh chính của phòng")
+    images = models.JSONField(default=list, blank=True, help_text="Danh sách tất cả hình ảnh của phòng (base64)")
     
     # Metadata với default values
     created_at = models.DateTimeField(default=timezone.now)
