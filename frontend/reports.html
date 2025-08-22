@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Báo cáo doanh thu - 3H Rental</title>
+    <link rel="stylesheet" href="css/styles.css" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  </head>
+  <body>
+    <header id="navbar"></header>
+    <main class="container">
+      <!-- Revenue Report Section -->
+      <section class="section">
+        <h2>Báo cáo doanh thu</h2>
+        
+        <!-- Date Range Selector -->
+        <div class="filters" style="margin-bottom: 2rem;">
+          <div class="grid" style="grid-template-columns: repeat(4, 1fr); gap: 1rem;">
+            <div>
+              <label>Từ tháng (YYYY-MM)</label>
+              <input class="input" type="text" id="fromPeriod" pattern="[0-9]{4}-[0-9]{2}" 
+                     placeholder="2025-01" required />
+            </div>
+            <div>
+              <label>Đến tháng (YYYY-MM)</label>
+              <input class="input" type="text" id="toPeriod" pattern="[0-9]{4}-[0-9]{2}" 
+                     placeholder="2025-12" required />
+            </div>
+            <div style="display: flex; align-items: end;">
+              <button class="btn" id="generateRevenueReport">Tạo báo cáo</button>
+            </div>
+            <div style="display: flex; align-items: end;">
+              <button class="btn secondary" id="exportReport">Xuất Excel</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Date Buttons -->
+        <div class="toolbar" style="margin-bottom: 2rem;">
+          <button class="btn secondary" id="thisMonth">Tháng này</button>
+          <button class="btn secondary" id="thisQuarter">Quý này</button>
+          <button class="btn secondary" id="thisYear">Năm này</button>
+          <button class="btn secondary" id="lastYear">Năm ngoái</button>
+        </div>
+
+        <!-- Revenue Summary -->
+        <div id="revenueSummary" class="grid" style="grid-template-columns: repeat(3, 1fr); gap: 2rem; margin-bottom: 2rem; display: none;">
+          <div class="card">
+            <h3>Tổng doanh thu</h3>
+            <div id="totalRevenue" class="stat-value">0 VND</div>
+          </div>
+          <div class="card">
+            <h3>Số hóa đơn đã thanh toán</h3>
+            <div id="totalInvoices" class="stat-value">0</div>
+          </div>
+          <div class="card">
+            <h3>Doanh thu trung bình/tháng</h3>
+            <div id="avgRevenue" class="stat-value">0 VND</div>
+          </div>
+        </div>
+
+        <!-- Revenue Chart -->
+        <div id="chartContainer" style="display: none; margin-bottom: 2rem;">
+          <canvas id="revenueChart" width="400" height="200"></canvas>
+        </div>
+
+        <!-- Monthly Breakdown Table -->
+        <div id="monthlyBreakdown" style="display: none;">
+          <h3>Chi tiết theo tháng</h3>
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Tháng</th>
+                <th>Doanh thu</th>
+                <th>Số hóa đơn</th>
+                <th>% So với tổng</th>
+              </tr>
+            </thead>
+            <tbody id="breakdown-tbody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Arrears Report Section -->
+      <section class="section">
+        <h2>Báo cáo công nợ</h2>
+        
+        <!-- Period Filter -->
+        <div class="filters" style="margin-bottom: 1rem;">
+          <div class="grid" style="grid-template-columns: repeat(3, 1fr); gap: 1rem;">
+            <div>
+              <label>Kỳ cụ thể (YYYY-MM)</label>
+              <input class="input" type="text" id="arrearsPeriod" pattern="[0-9]{4}-[0-9]{2}" 
+                     placeholder="Để trống = tất cả kỳ" />
+            </div>
+            <div style="display: flex; align-items: end;">
+              <button class="btn" id="generateArrearsReport">Tạo báo cáo công nợ</button>
+            </div>
+            <div style="display: flex; align-items: end;">
+              <button class="btn secondary" id="exportArrears">Xuất danh sách</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Arrears Summary -->
+        <div id="arrearsSummary" class="grid" style="grid-template-columns: repeat(4, 1fr); gap: 2rem; margin-bottom: 2rem; display: none;">
+          <div class="card">
+            <h3>Tổng công nợ</h3>
+            <div id="totalUnpaid" class="stat-value danger">0 VND</div>
+          </div>
+          <div class="card">
+            <h3>Số tiền quá hạn</h3>
+            <div id="totalOverdue" class="stat-value danger">0 VND</div>
+          </div>
+          <div class="card">
+            <h3>Số hóa đơn chưa trả</h3>
+            <div id="unpaidCount" class="stat-value">0</div>
+          </div>
+          <div class="card">
+            <h3>Số hóa đơn quá hạn</h3>
+            <div id="overdueCount" class="stat-value">0</div>
+          </div>
+        </div>
+
+        <!-- Unpaid Invoices Table -->
+        <div id="unpaidInvoices" style="display: none;">
+          <h3>Danh sách hóa đơn chưa thanh toán</h3>
+          <table class="table">
+            <thead>
+              <tr>
+                <th>ID Hóa đơn</th>
+                <th>Phòng</th>
+                <th>Người thuê</th>
+                <th>Email</th>
+                <th>Kỳ</th>
+                <th>Số tiền</th>
+                <th>Trạng thái</th>
+                <th>Ngày đến hạn</th>
+                <th>Số ngày quá hạn</th>
+                <th>Hành động</th>
+              </tr>
+            </thead>
+            <tbody id="unpaid-tbody"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+
+    <script src="js/api.js"></script>
+    <script src="js/storage.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/main.js"></script>
+    <script src="js/reports.js"></script>
+  </body>
+</html>

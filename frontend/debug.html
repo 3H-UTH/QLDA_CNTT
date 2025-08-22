@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Debug Session - 3H Rental</title>
+    <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+    <header id="navbar"></header>
+    <main class="container">
+        <section class="section">
+            <h2>Debug Session Information</h2>
+            <div id="debug-info">
+                <h3>LocalStorage Data:</h3>
+                <div id="localStorage-data"></div>
+                
+                <h3>API Session:</h3>
+                <div id="api-session"></div>
+                
+                <h3>Auth Check:</h3>
+                <div id="auth-check"></div>
+                
+                <button onclick="testAuth()">Test Authentication</button>
+                <button onclick="clearSession()">Clear Session</button>
+            </div>
+        </section>
+    </main>
+
+    <script src="js/api.js"></script>
+    <script src="js/common.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/main.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            displayDebugInfo();
+        });
+
+        function displayDebugInfo() {
+            // LocalStorage data
+            const localStorageDiv = document.getElementById('localStorage-data');
+            localStorageDiv.innerHTML = `
+                <p><strong>access_token:</strong> ${localStorage.getItem('access_token') || 'null'}</p>
+                <p><strong>refresh_token:</strong> ${localStorage.getItem('refresh_token') || 'null'}</p>
+                <p><strong>currentUser:</strong> ${localStorage.getItem('currentUser') || 'null'}</p>
+            `;
+
+            // API Session
+            const apiSessionDiv = document.getElementById('api-session');
+            try {
+                const apiUser = api.getSession();
+                apiSessionDiv.innerHTML = `<pre>${JSON.stringify(apiUser, null, 2)}</pre>`;
+            } catch (error) {
+                apiSessionDiv.innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
+            }
+
+            // Auth Check
+            const authCheckDiv = document.getElementById('auth-check');
+            try {
+                const currentUserResult = currentUser();
+                authCheckDiv.innerHTML = `
+                    <p><strong>currentUser() result:</strong></p>
+                    <pre>${JSON.stringify(currentUserResult, null, 2)}</pre>
+                `;
+            } catch (error) {
+                authCheckDiv.innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
+            }
+        }
+
+        function testAuth() {
+            console.log('Testing authentication...');
+            
+            console.log('1. currentUser():', currentUser());
+            
+            console.log('2. requireAuth() general:', requireAuth());
+            
+            try {
+                console.log('3. requireAuth([OWNER]):', requireAuth(['OWNER']));
+            } catch (error) {
+                console.error('Error with requireAuth([OWNER]):', error);
+            }
+            
+            displayDebugInfo();
+        }
+
+        function clearSession() {
+            if (confirm('Clear all session data?')) {
+                localStorage.clear();
+                location.reload();
+            }
+        }
+    </script>
+</body>
+</html>

@@ -226,9 +226,8 @@
             submitBtn.innerHTML = '<i class="fas fa-check"></i> Thành công!';
             setTimeout(() => {
               // Add timestamp to force page refresh and navbar update
-              const url = new URL("index.html", window.location.origin);
-              url.searchParams.set('_t', Date.now());
-              window.location.href = url.toString();
+              const redirectUrl = "index.html?_t=" + Date.now();
+              window.location.href = redirectUrl;
             }, 1000);
             
           } catch (err) {

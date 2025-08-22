@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Quản lý chỉ số điện nước - 3H Rental</title>
+    <link rel="stylesheet" href="css/styles.css" />
+  </head>
+  <body>
+    <header id="navbar"></header>
+    <main class="container">
+      <!-- Meter Reading Form Section -->
+      <section class="section">
+        <h2>Nhập chỉ số điện nước</h2>
+        <form id="meterReadingForm" style="max-width: 600px">
+          <input type="hidden" id="readingId" />
+          <div class="grid" style="grid-template-columns: repeat(2, 1fr)">
+            <div>
+              <label>Hợp đồng</label>
+              <select class="input" id="contractSelect" required>
+                <option value="">Chọn hợp đồng...</option>
+              </select>
+            </div>
+            <div>
+              <label>Kỳ đọc chỉ số (YYYY-MM)</label>
+              <input class="input" type="text" id="period" pattern="[0-9]{4}-[0-9]{2}" 
+                     placeholder="2025-08" required />
+            </div>
+            <div>
+              <label>Chỉ số điện cũ (kWh)</label>
+              <input class="input" type="number" id="elecPrev" min="0" required />
+            </div>
+            <div>
+              <label>Chỉ số điện mới (kWh)</label>
+              <input class="input" type="number" id="elecCurr" min="0" required />
+            </div>
+            <div>
+              <label>Chỉ số nước cũ (m³)</label>
+              <input class="input" type="number" id="waterPrev" min="0" required />
+            </div>
+            <div>
+              <label>Chỉ số nước mới (m³)</label>
+              <input class="input" type="number" id="waterCurr" min="0" required />
+            </div>
+            <div>
+              <label>Giá điện (VND/kWh)</label>
+              <input class="input" type="number" id="elecPrice" value="3500" min="0" required />
+            </div>
+            <div>
+              <label>Giá nước (VND/m³)</label>
+              <input class="input" type="number" id="waterPrice" value="7000" min="0" required />
+            </div>
+          </div>
+          
+          <!-- Usage Calculation Display -->
+          <div class="grid" style="grid-template-columns: repeat(2, 1fr); margin-top: 1rem; padding: 1rem; background: #f5f5f5; border-radius: 8px;">
+            <div>
+              <label>Điện tiêu thụ</label>
+              <div id="elecUsage" style="font-weight: bold; color: #2563eb;">-- kWh</div>
+            </div>
+            <div>
+              <label>Nước tiêu thụ</label>
+              <div id="waterUsage" style="font-weight: bold; color: #2563eb;">-- m³</div>
+            </div>
+            <div>
+              <label>Tiền điện</label>
+              <div id="elecCost" style="font-weight: bold; color: #dc2626;">-- VND</div>
+            </div>
+            <div>
+              <label>Tiền nước</label>
+              <div id="waterCost" style="font-weight: bold; color: #dc2626;">-- VND</div>
+            </div>
+          </div>
+
+          <div class="toolbar">
+            <button class="btn" type="submit">Lưu chỉ số</button>
+            <button class="btn secondary" type="reset">Làm mới</button>
+          </div>
+        </form>
+      </section>
+
+      <!-- Meter Reading List Section -->
+      <section class="section">
+        <h2>Lịch sử chỉ số điện nước</h2>
+        
+        <!-- Filters -->
+        <div class="filters" style="margin-bottom: 1rem;">
+          <div class="grid" style="grid-template-columns: repeat(3, 1fr); gap: 1rem;">
+            <div>
+              <label>Lọc theo hợp đồng</label>
+              <select class="input" id="filterContract">
+                <option value="">Tất cả hợp đồng</option>
+              </select>
+            </div>
+            <div>
+              <label>Lọc theo kỳ</label>
+              <input class="input" type="text" id="filterPeriod" placeholder="2025-08" />
+            </div>
+            <div style="display: flex; align-items: end;">
+              <button class="btn secondary" id="filterBtn">Lọc</button>
+              <button class="btn secondary" id="clearFilterBtn" style="margin-left: 0.5rem;">Xóa lọc</button>
+            </div>
+          </div>
+        </div>
+
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Hợp đồng</th>
+              <th>Phòng</th>
+              <th>Kỳ</th>
+              <th>Điện (kWh)</th>
+              <th>Nước (m³)</th>
+              <th>Tiền điện</th>
+              <th>Tiền nước</th>
+              <th>Ngày nhập</th>
+              <th>Hành động</th>
+            </tr>
+          </thead>
+          <tbody id="reading-tbody"></tbody>
+        </table>
+      </section>
+    </main>
+
+    <script src="js/api.js"></script>
+    <script src="js/storage.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/main.js"></script>
+    <script src="js/meter-reading.js"></script>
+  </body>
+</html>

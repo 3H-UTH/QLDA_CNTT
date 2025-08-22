@@ -7,3 +7,4 @@ django-cors-headers>=3.13
 mysqlclient>=2.1
 PyJWT>=2.4
 Pillow>=9.0
+python-dotenv>=1.0

@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Quản lý người thuê - 3H Rental</title>
+    <link rel="stylesheet" href="css/styles.css" />
+  </head>
+  <body>
+    <header id="navbar"></header>
+    <main class="container">
+      <!-- Tenant List Section -->
+      <section class="section">
+        <h2>Danh sách người thuê</h2>
+        
+        <!-- Search and Filters -->
+        <div class="filters" style="margin-bottom: 1rem;">
+          <div class="grid" style="grid-template-columns: repeat(3, 1fr); gap: 1rem;">
+            <div>
+              <label>Tìm kiếm</label>
+              <input class="input" type="text" id="searchTenant" 
+                     placeholder="Tìm theo tên, email, phone, CCCD..." />
+            </div>
+            <div>
+              <label>Lọc theo người dùng</label>
+              <select class="input" id="filterUser">
+                <option value="">Tất cả người dùng</option>
+              </select>
+            </div>
+            <div style="display: flex; align-items: end;">
+              <button class="btn secondary" id="searchBtn">Tìm kiếm</button>
+              <button class="btn secondary" id="clearSearchBtn" style="margin-left: 0.5rem;">Xóa tìm kiếm</button>
+            </div>
+          </div>
+        </div>
+
+        <table class="table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Họ và tên</th>
+              <th>Email</th>
+              <th>Số điện thoại</th>
+              <th>CCCD/CMND</th>
+              <th>Địa chỉ</th>
+              <th>Liên hệ khẩn cấp</th>
+              <th>Trạng thái</th>
+              <th>Hành động</th>
+            </tr>
+          </thead>
+          <tbody id="tenant-tbody"></tbody>
+        </table>
+      </section>
+
+      <!-- Tenant Details Modal -->
+      <div id="tenantModal" class="modal" style="display: none;">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h3>Chi tiết người thuê</h3>
+            <span class="close" id="closeTenantModal">&times;</span>
+          </div>
+          <div class="modal-body">
+            <form id="tenantForm">
+              <input type="hidden" id="tenantId" />
+              <input type="hidden" id="userId" />
+              
+              <div class="grid" style="grid-template-columns: repeat(2, 1fr)">
+                <div>
+                  <label>Họ và tên</label>
+                  <input class="input" id="fullName" readonly />
+                </div>
+                <div>
+                  <label>Email</label>
+                  <input class="input" id="email" readonly />
+                </div>
+                <div>
+                  <label>Số điện thoại</label>
+                  <input class="input" type="tel" id="phone" />
+                </div>
+                <div>
+                  <label>CCCD/CMND</label>
+                  <input class="input" id="idNumber" />
+                </div>
+                <div style="grid-column: 1/-1">
+                  <label>Địa chỉ</label>
+                  <textarea class="input" id="address" rows="2"></textarea>
+                </div>
+                <div style="grid-column: 1/-1">
+                  <label>Người liên hệ khẩn cấp</label>
+                  <input class="input" id="emergencyContact" 
+                         placeholder="Số điện thoại và tên người liên hệ" />
+                </div>
+              </div>
+            </form>
+          </div>
+          <div class="modal-footer">
+            <button class="btn" id="saveTenant">Lưu thông tin</button>
+            <button class="btn secondary" id="closeTenantModalBtn">Đóng</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tenant Contracts Modal -->
+      <div id="contractsModal" class="modal" style="display: none;">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h3>Hợp đồng của người thuê</h3>
+            <span class="close" id="closeContractsModal">&times;</span>
+          </div>
+          <div class="modal-body">
+            <div id="tenantContractsInfo"></div>
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Phòng</th>
+                  <th>Bắt đầu</th>
+                  <th>Kết thúc</th>
+                  <th>Trạng thái</th>
+                  <th>Tiền cọc</th>
+                </tr>
+              </thead>
+              <tbody id="tenant-contracts-tbody"></tbody>
+            </table>
+          </div>
+          <div class="modal-footer">
+            <button class="btn secondary" id="closeContractsModalBtn">Đóng</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tenant Invoices Modal -->
+      <div id="invoicesModal" class="modal" style="display: none;">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h3>Hóa đơn của người thuê</h3>
+            <span class="close" id="closeInvoicesModal">&times;</span>
+          </div>
+          <div class="modal-body">
+            <div id="tenantInvoicesInfo"></div>
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Kỳ</th>
+                  <th>Phòng</th>
+                  <th>Tổng tiền</th>
+                  <th>Trạng thái</th>
+                  <th>Ngày đến hạn</th>
+                </tr>
+              </thead>
+              <tbody id="tenant-invoices-tbody"></tbody>
+            </table>
+          </div>
+          <div class="modal-footer">
+            <button class="btn secondary" id="closeInvoicesModalBtn">Đóng</button>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <script src="js/api.js"></script>
+    <script src="js/storage.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/main.js"></script>
+    <script src="js/tenant-management.js"></script>
+  </body>
+</html>

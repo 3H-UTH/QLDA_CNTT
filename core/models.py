@@ -1,5 +1,6 @@
 from django.db import models
 from django.utils import timezone
+from django.conf import settings
 
 
 
@@ -30,9 +31,26 @@ class Room(models.Model):
         ordering = ['name']
 
 
-class Tenant(models.Model): 
-    user = models.OneToOneField("accounts.User", on_delete=models.CASCADE, related_name="tenant_profile")
-    id_number = models.CharField(max_length=50, blank=True, unique=True)
+
+class Tenant(models.Model):
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="tenant_profile")
+    id_number = models.CharField("CCCD/CMND", max_length=50, blank=True)
+    phone = models.CharField(max_length=20, blank=True)
+    address = models.CharField(max_length=255, blank=True)
+    emergency_contact = models.CharField("Người liên hệ khẩn cấp", max_length=255, blank=True)
+    
+    # Thêm các trường thông tin bổ sung
+    occupation = models.CharField("Nghề nghiệp", max_length=100, blank=True)
+    workplace = models.CharField("Nơi làm việc", max_length=255, blank=True)
+    emergency_phone = models.CharField("SĐT người liên hệ khẩn cấp", max_length=20, blank=True)
+    emergency_relationship = models.CharField("Mối quan hệ với người liên hệ", max_length=50, blank=True)
+    
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.user.full_name or self.user.email
+
 
 class Contract(models.Model):
     ACTIVE = "ACTIVE"; ENDED = "ENDED"; SUSPENDED = "SUSPENDED"
@@ -71,3 +89,39 @@ class MeterReading(models.Model):
     def __str__(self):
         return f"{self.contract_id} - {self.period}"
 
+
+class Invoice(models.Model):
+    UNPAID = "UNPAID"
+    PAID = "PAID" 
+    OVERDUE = "OVERDUE"
+    STATUS_CHOICES = [
+        (UNPAID, "UNPAID"),
+        (PAID, "PAID"),
+        (OVERDUE, "OVERDUE")
+    ]
+    
+    contract = models.ForeignKey("core.Contract", on_delete=models.CASCADE, related_name="invoices")
+    period = models.CharField(max_length=7, help_text="Kỳ thanh toán (YYYY-MM)")
+    room_price = models.DecimalField(max_digits=12, decimal_places=2, help_text="Tiền phòng")
+    elec_cost = models.DecimalField(max_digits=12, decimal_places=2, default=0, help_text="Tiền điện")
+    water_cost = models.DecimalField(max_digits=12, decimal_places=2, default=0, help_text="Tiền nước")
+    service_cost = models.DecimalField(max_digits=12, decimal_places=2, default=0, help_text="Phí dịch vụ")
+    total = models.DecimalField(max_digits=12, decimal_places=2, help_text="Tổng tiền")
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default=UNPAID)
+    issued_at = models.DateTimeField(default=timezone.now, help_text="Ngày phát hành")
+    due_date = models.DateField(help_text="Ngày đến hạn thanh toán")
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ("contract", "period")  # mỗi hợp đồng–kỳ chỉ 1 hóa đơn
+        ordering = ["-issued_at"]
+
+    def save(self, *args, **kwargs):
+        # Tự động tính tổng tiền khi lưu
+        self.total = self.room_price + self.elec_cost + self.water_cost + self.service_cost
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"Invoice {self.id} - {self.contract} - {self.period} - {self.total}đ"
