@@ -27,7 +27,7 @@ function renderRoom(r) {
   // Ensure all images have proper URLs
   images = images.map(img => {
     if (!img) return "assets/placeholder.svg";
-    return img.startsWith('http') ? img : `http://127.0.0.1:8000${img}`;
+    return img;
   });
   
   // Handle different field names from API
