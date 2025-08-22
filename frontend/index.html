@@ -197,8 +197,8 @@
                   </div>
                 </div>
                 
-                <p style="color: var(--text-muted, #666); margin-bottom: 1.5rem; line-height: 1.5; font-size: 0.875rem;">
-                  ${room.detail ? (room.detail.length > 80 ? room.detail.substring(0, 80) + '...' : room.detail) : 'Phòng hiện đại, đầy đủ tiện nghi'}
+                <p style="color: var(--text-muted, #666); margin-bottom: 1.5rem; line-height: 1.4; font-size: 0.875rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis; height: 2.4em;">
+                  ${room.detail || 'Phòng hiện đại, đầy đủ tiện nghi'}
                 </p>
                 
                 <div class="actions" style="display: flex; gap: 0.75rem;">
