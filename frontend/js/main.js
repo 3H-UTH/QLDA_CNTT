@@ -7,7 +7,21 @@ function qsa(s, c = document) {
 }
 
 function fmtVND(n) {
-  return (n || 0).toLocaleString("vi-VN") + "₫";
+  // Đảm bảo n là một số hợp lệ
+  const numValue = parseFloat(n);
+  
+  // Kiểm tra nếu là số hợp lệ (không phải NaN)
+  if (isNaN(numValue)) {
+    console.warn("Giá trị không phải là số:", n);
+    return "0₫";
+  }
+  
+  // Sử dụng định dạng tiền tệ Việt Nam với khoảng cách giữa các chữ số
+  const formatter = new Intl.NumberFormat("vi-VN", {
+    style: "decimal",
+    maximumFractionDigits: 0,
+  });
+  return formatter.format(numValue) + "₫";
 }
 
 function renderNavbar() {
