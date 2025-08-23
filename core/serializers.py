@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Room, Contract, MeterReading, Invoice, Payment
+from .models import Room, Contract, MeterReading, Invoice, Payment, RentalRequest
 from django.contrib.auth import get_user_model
 from drf_spectacular.utils import extend_schema_field
 from decimal import Decimal
@@ -77,45 +77,115 @@ class RoomSerializer(serializers.ModelSerializer):
         room.images = all_images
         room.save(update_fields=['images'])
 
-class ContractCreateSerializer(serializers.ModelSerializer):
+class RentalRequestCreateSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Contract
-        fields = ["id","room","tenant","start_date","end_date","deposit","billing_cycle","status","notes"]
+        model = RentalRequest
+        fields = ["id", "room", "tenant", "notes", "viewing_time", "status"]
         read_only_fields = ["status", "tenant"]
 
     def validate(self, attrs):
         room: Room = attrs["room"]
         
-        # Check if room is available for rental requests
+        # Kiểm tra thời gian xem nhà
+        viewing_time = attrs.get("viewing_time")
+        if viewing_time:
+            from django.utils import timezone
+            now = timezone.now()
+            min_time = now + timezone.timedelta(minutes=30)
+            
+            if viewing_time < min_time:
+                raise serializers.ValidationError(
+                    {"viewing_time": "Thời gian xem nhà phải cách thời điểm hiện tại ít nhất 30 phút."}
+                )
+        
+        # Check if room is available for viewing
         if room.status not in [getattr(Room, "EMPTY", "EMPTY")]:
-            raise serializers.ValidationError("Phòng này hiện không còn trống")
+            raise serializers.ValidationError({"room": "Phòng này hiện không còn trống"})
             
         # Check if there's already a pending request for this room by this user
         request = self.context.get('request')
         if request and hasattr(request, 'user'):
-            existing_request = Contract.objects.filter(
+            existing_request = RentalRequest.objects.filter(
                 room=room,
                 tenant=request.user,
-                status=Contract.PENDING
+                status=RentalRequest.PENDING
             ).exists()
             if existing_request:
-                raise serializers.ValidationError("Bạn đã có yêu cầu thuê phòng này đang chờ xử lý")
+                raise serializers.ValidationError({"room": "Bạn đã có yêu cầu xem phòng này đang chờ xử lý"})
         
         return attrs
         
     def create(self, validated_data):
-        # For tenant requests, create as PENDING status
-        request = self.context.get('request')
-        if request and getattr(request.user, 'role', None) == 'TENANT':
-            validated_data['status'] = Contract.PENDING
-            
+        # Đảm bảo trạng thái là PENDING
+        validated_data['status'] = RentalRequest.PENDING
+        return super().create(validated_data)
+
+
+class RentalRequestSerializer(serializers.ModelSerializer):
+    tenant_name = serializers.CharField(source="tenant.full_name", read_only=True)
+    tenant_phone = serializers.CharField(source="tenant.phone", read_only=True)
+    tenant_email = serializers.EmailField(source="tenant.email", read_only=True)
+    room_name = serializers.CharField(source="room.name", read_only=True)
+    room_price = serializers.DecimalField(source="room.base_price", max_digits=12, decimal_places=2, read_only=True)
+    
+    class Meta:
+        model = RentalRequest
+        fields = "__all__"
+
+
+class ContractCreateSerializer(serializers.ModelSerializer):
+    rental_request_id = serializers.IntegerField(write_only=True, required=False)
+    
+    class Meta:
+        model = Contract
+        fields = ["id", "room", "tenant", "start_date", "end_date", "monthly_rent", "deposit", "billing_cycle", "status", "notes", "contract_image", "rental_request_id"]
+        read_only_fields = ["status"]
+
+    def validate(self, attrs):
+        room: Room = attrs["room"]
+        
+        # Xác nhận phòng có trống không
+        if room.status not in [getattr(Room, "EMPTY", "EMPTY")]:
+            raise serializers.ValidationError({"room": "Phòng này hiện không còn trống"})
+        
+        # Kiểm tra ngày bắt đầu và kết thúc
+        start_date = attrs.get("start_date")
+        end_date = attrs.get("end_date")
+        if start_date and end_date and start_date >= end_date:
+            raise serializers.ValidationError({"end_date": "Ngày kết thúc phải sau ngày bắt đầu"})
+        
+        # Xác thực rental_request_id nếu được cung cấp
+        rental_request_id = attrs.pop('rental_request_id', None)
+        if rental_request_id:
+            try:
+                rental_request = RentalRequest.objects.get(id=rental_request_id)
+                # Cho phép tạo hợp đồng từ cả PENDING và ACCEPTED
+                if rental_request.status not in [RentalRequest.PENDING, RentalRequest.ACCEPTED]:
+                    raise serializers.ValidationError({"rental_request_id": "Chỉ có thể tạo hợp đồng từ yêu cầu chờ xử lý hoặc đã được chấp nhận"})
+                attrs['rental_request'] = rental_request
+            except RentalRequest.DoesNotExist:
+                raise serializers.ValidationError({"rental_request_id": "Yêu cầu xem nhà không tồn tại"})
+        
+        return attrs
+        
+    def create(self, validated_data):
+        # Đảm bảo trạng thái là ACTIVE
+        validated_data['status'] = Contract.ACTIVE
+        
+        # Lấy rental_request nếu có
+        rental_request = validated_data.get('rental_request')
+        
         contract = super().create(validated_data)
         
-        # Only change room status to RENTED when contract is ACTIVE (approved by owner)
-        if contract.status == Contract.ACTIVE:
-            room = contract.room
-            room.status = getattr(Room, "RENTED", "RENTED")
-            room.save(update_fields=["status"])
+        # Cập nhật trạng thái phòng thành RENTED
+        room = contract.room
+        room.status = getattr(Room, "RENTED", "RENTED")
+        room.save(update_fields=["status"])
+        
+        # Cập nhật trạng thái rental_request nếu có
+        if rental_request:
+            rental_request.status = RentalRequest.ACCEPTED
+            rental_request.save(update_fields=["status"])
             
         return contract
     
@@ -124,11 +194,10 @@ class ContractSerializer(serializers.ModelSerializer):
     tenant_phone = serializers.CharField(source="tenant.phone", read_only=True)
     tenant_email = serializers.EmailField(source="tenant.email", read_only=True)
     room_name = serializers.CharField(source="room.name", read_only=True)
-    monthly_rent = serializers.DecimalField(source="room.base_price", max_digits=12, decimal_places=2, read_only=True)
     
     class Meta:
         model = Contract
-        fields = ["id","room","tenant","tenant_name","tenant_phone","tenant_email","room_name","monthly_rent","start_date","end_date","deposit","billing_cycle","status","notes"]
+        fields = ["id","room","tenant","tenant_name","tenant_phone","tenant_email","room_name","monthly_rent","start_date","end_date","deposit","billing_cycle","status","notes","contract_image"]
 
 
 

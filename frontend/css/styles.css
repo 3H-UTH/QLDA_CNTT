@@ -1246,7 +1246,6 @@ button:focus,
 }
 
 .contract-details {
-  display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 0.5rem;
   font-size: 0.875rem;
@@ -1282,11 +1281,11 @@ button:focus,
   background-color: var(--card-bg);
   margin: 2% auto;
   padding: 0;
-  border-radius: var(--radius-lg);
-  width: 90%;
-  max-width: 800px;
+  border-radius: var(--radius-xl);
+  width: 95%;
+  max-width: 950px;
   max-height: 90vh;
-  overflow-y: auto;
+  overflow: hidden;
   box-shadow: var(--shadow-xl);
   animation: slideIn 0.3s ease;
 }
@@ -1537,286 +1536,7 @@ button:focus,
   }
 }
 
-/* Notification System Styles */
-.notification-container {
-  position: relative;
-  z-index: 100;
-}
-
-.notification-bell {
-  position: relative;
-  padding: 0.5rem;
-  font-size: 1.1rem;
-  background: none;
-  border: none;
-  color: var(--text-secondary);
-  cursor: pointer;
-  transition: color 0.2s ease;
-}
-
-.notification-bell:hover {
-  color: var(--text-primary);
-}
-
-.notification-badge {
-  position: absolute;
-  top: 0;
-  right: 0;
-  background: var(--danger);
-  color: white;
-  font-size: 0.75rem;
-  font-weight: 600;
-  padding: 0.125rem 0.375rem;
-  border-radius: 10px;
-  min-width: 18px;
-  text-align: center;
-  line-height: 1.2;
-  transform: translate(25%, -25%);
-}
-
-.notification-dropdown {
-  position: absolute;
-  top: 100%;
-  right: 0;
-  width: 360px;
-  max-height: 500px;
-  background: var(--card-bg);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-xl);
-  overflow: hidden;
-  z-index: 1000;
-}
-
-.notification-header {
-  padding: 1rem;
-  border-bottom: 1px solid var(--border-light);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.notification-header h3 {
-  margin: 0;
-  font-size: 1rem;
-  font-weight: 600;
-  color: var(--text-primary);
-}
-
-.btn-text {
-  background: none;
-  border: none;
-  color: var(--accent-blue);
-  font-size: 0.875rem;
-  cursor: pointer;
-  text-decoration: none;
-  padding: 0;
-}
-
-.btn-text:hover {
-  text-decoration: underline;
-}
-
-.notification-list {
-  max-height: 350px;
-  overflow-y: auto;
-}
-
-.notification-empty {
-  padding: 2rem;
-  text-align: center;
-  color: var(--text-muted);
-  font-size: 0.875rem;
-}
-
-.notification-item {
-  display: flex;
-  align-items: flex-start;
-  padding: 1rem;
-  border-bottom: 1px solid var(--border-light);
-  cursor: pointer;
-  transition: background-color 0.2s ease;
-  position: relative;
-}
-
-.notification-item:hover {
-  background: var(--bg-secondary);
-}
-
-.notification-item.unread {
-  background: rgba(14, 165, 233, 0.02);
-}
-
-.notification-item:last-child {
-  border-bottom: none;
-}
-
-.notification-icon {
-  width: 32px;
-  height: 32px;
-  border-radius: var(--radius-md);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-right: 0.75rem;
-  flex-shrink: 0;
-}
-
-.notification-icon.rental_request {
-  background: #fef3c7;
-  color: #92400e;
-}
-
-.notification-icon.rental_approved {
-  background: #d1fae5;
-  color: #065f46;
-}
-
-.notification-icon.rental_rejected {
-  background: #fee2e2;
-  color: #991b1b;
-}
-
-.notification-icon.payment {
-  background: #dbeafe;
-  color: #1d4ed8;
-}
-
-.notification-icon.invoice {
-  background: #ede9fe;
-  color: #6b21a8;
-}
-
-.notification-icon.system {
-  background: #f3f4f6;
-  color: #374151;
-}
-
-.notification-content {
-  flex: 1;
-  min-width: 0;
-}
-
-.notification-title {
-  font-weight: 600;
-  color: var(--text-primary);
-  font-size: 0.875rem;
-  margin-bottom: 0.25rem;
-}
-
-.notification-message {
-  color: var(--text-secondary);
-  font-size: 0.875rem;
-  line-height: 1.4;
-  margin-bottom: 0.25rem;
-}
-
-.notification-time {
-  color: var(--text-muted);
-  font-size: 0.75rem;
-}
-
-.notification-dot {
-  width: 8px;
-  height: 8px;
-  background: var(--accent-blue);
-  border-radius: 50%;
-  position: absolute;
-  top: 1rem;
-  right: 1rem;
-}
-
-.notification-footer {
-  padding: 0.75rem 1rem;
-  border-top: 1px solid var(--border-light);
-  text-align: center;
-  background: var(--bg-secondary);
-}
-
-/* Toast Notifications */
-.notification-toast {
-  position: fixed;
-  top: 20px;
-  right: 20px;
-  width: 350px;
-  background: var(--card-bg);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-xl);
-  display: flex;
-  align-items: flex-start;
-  padding: 1rem;
-  z-index: 2000;
-  animation: slideInRight 0.3s ease;
-}
-
-.toast-icon {
-  width: 32px;
-  height: 32px;
-  border-radius: var(--radius-md);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-right: 0.75rem;
-  flex-shrink: 0;
-}
-
-.toast-content {
-  flex: 1;
-  min-width: 0;
-}
-
-.toast-title {
-  font-weight: 600;
-  color: var(--text-primary);
-  font-size: 0.875rem;
-  margin-bottom: 0.25rem;
-}
-
-.toast-message {
-  color: var(--text-secondary);
-  font-size: 0.875rem;
-  line-height: 1.4;
-}
-
-.toast-close {
-  background: none;
-  border: none;
-  color: var(--text-muted);
-  cursor: pointer;
-  padding: 0.25rem;
-  margin-left: 0.5rem;
-  flex-shrink: 0;
-}
-
-.toast-close:hover {
-  color: var(--text-primary);
-}
-
-@keyframes slideInRight {
-  from {
-    opacity: 0;
-    transform: translateX(100%);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-/* Responsive notifications */
-@media (max-width: 768px) {
-  .notification-dropdown {
-    width: 300px;
-    right: -1rem;
-  }
-  
-  .notification-toast {
-    width: calc(100vw - 2rem);
-    right: 1rem;
-    left: 1rem;
-  }
-}
+/* Notification System removed */
 
 /* Enhanced Rental Management Styles */
 .tabs-header {
@@ -1988,6 +1708,12 @@ button:focus,
   border: 1px solid rgba(239, 68, 68, 0.2);
 }
 
+.status-canceled {
+  background: rgba(107, 114, 128, 0.1);
+  color: #6b7280;
+  border: 1px solid rgba(107, 114, 128, 0.2);
+}
+
 .card-content {
   margin-bottom: 1.5rem;
 }
@@ -2118,5 +1844,902 @@ button:focus,
   
   .stats-cards {
     grid-template-columns: 1fr;
+  }
+}
+
+/* Contract Creation Modal Styles */
+.contract-modal {
+  max-width: fit-content;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.contract-modal .modal-content {
+  border-radius: 16px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  border: none;
+}
+
+.contract-info-summary {
+  background: var(--bg-accent);
+  padding: 1.5rem;
+  border-radius: var(--radius-lg);
+  margin-bottom: 2rem;
+}
+
+.contract-info-summary h4 {
+  color: var(--text-primary);
+  margin-bottom: 1rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.info-item label {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.info-item span {
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.form-group label {
+  font-weight: 500;
+  color: var(--text-primary);
+  font-size: 0.875rem;
+}
+
+.required {
+  color: var(--danger);
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  padding: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: var(--accent-blue);
+  box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.1);
+}
+
+/* File input styling */
+.form-group input[type="file"] {
+  padding: 0.5rem;
+  background: var(--bg-secondary);
+  cursor: pointer;
+}
+
+.form-group input[type="file"]::-webkit-file-upload-button {
+  background: var(--primary);
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  margin-right: 0.75rem;
+  font-size: 0.875rem;
+  transition: background 0.2s ease;
+}
+
+.form-group input[type="file"]::-webkit-file-upload-button:hover {
+  background: var(--primary-light);
+}
+
+/* Form help text */
+.form-help {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-top: 0.25rem;
+  line-height: 1.4;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border);
+}
+
+/* Toast Notifications */
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.toast {
+  animation: slideIn 0.3s ease;
+}
+
+/* Mobile responsiveness for contract modal */
+@media (max-width: 768px) {
+  .contract-modal {
+    max-width: 95vw;
+    margin: 1rem;
+  }
+  
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+  
+  .info-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .modal-footer {
+    flex-direction: column;
+  }
+}
+
+/* Contract Details Modal - Clean & Elegant Design */
+.contract-details {
+  padding: 0;
+  max-height: 85vh;
+  overflow-y: auto;
+  background: #fafbfc;
+}
+
+/* Header Section */
+.contract-view-header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 1.5rem 2rem;
+  margin: -1.5rem -1.5rem 0 -1.5rem;
+}
+
+.contract-meta {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 1.25rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.contract-number {
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  color: white;
+  text-align: center;
+  line-height: 1.4;
+}
+
+.contract-status {
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: white;
+}
+
+.contract-status.active {
+  background: rgba(34, 197, 94, 0.9);
+  border-color: rgba(34, 197, 94, 0.3);
+}
+
+.contract-status.ended {
+  background: rgba(156, 163, 175, 0.9);
+  border-color: rgba(156, 163, 175, 0.3);
+}
+
+.contract-status.suspended {
+  background: rgba(245, 158, 11, 0.9);
+  border-color: rgba(245, 158, 11, 0.3);
+}
+
+.contract-period-summary {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 1rem;
+  opacity: 0.95;
+  flex-wrap: wrap;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 0.75rem 1.25rem;
+  border-radius: 12px;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.period-label {
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.period-value {
+  font-weight: 700;
+  padding: 0.5rem 1rem;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(5px);
+}
+
+/* Body Section */
+.contract-view-body {
+  padding: 1.5rem;
+}
+
+.contract-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  align-items: start;
+}
+
+/* Column Layout */
+.contract-left-col,
+.contract-right-col {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* Card Styles */
+.info-card {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e5e7eb;
+  overflow: hidden;
+  transition: all 0.2s ease;
+  height: fit-content;
+}
+
+.info-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transform: translateY(-1px);
+}
+
+.card-title {
+  margin: 0;
+  padding: 1rem 1.25rem;
+  background: #f8fafc;
+  border-bottom: 1px solid #e5e7eb;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #374151;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.card-title i {
+  color: #6366f1;
+  font-size: 1rem;
+}
+
+/* Info Rows */
+.info-rows {
+  padding: 1.25rem;
+}
+
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.info-row:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.info-row .label {
+  font-size: 0.875rem;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.info-row .value {
+  font-size: 0.9rem;
+  color: #111827;
+  font-weight: 600;
+  text-align: right;
+}
+
+.info-row .value.money {
+  color: #059669;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+/* Room Card */
+.room-content {
+  padding: 1.25rem;
+}
+
+.room-header-compact {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.room-image-wrapper {
+  flex-shrink: 0;
+}
+
+.room-thumb {
+  width: 60px;
+  height: 60px;
+  border-radius: 8px;
+  object-fit: cover;
+  border: 2px solid #e5e7eb;
+}
+
+.room-thumb-placeholder {
+  width: 60px;
+  height: 60px;
+  background: #f3f4f6;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #9ca3af;
+  border: 2px solid #e5e7eb;
+}
+
+.room-info-compact {
+  flex: 1;
+}
+
+.room-name {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: #111827;
+}
+
+.room-address {
+  margin: 0;
+  font-size: 0.875rem;
+  color: #6b7280;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.room-address i {
+  color: #ef4444;
+  font-size: 0.75rem;
+}
+
+.room-details-compact {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.room-detail-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  color: #6b7280;
+  background: #f8fafc;
+  padding: 0.375rem 0.75rem;
+  border-radius: 6px;
+  border: 1px solid #e5e7eb;
+}
+
+.room-detail-item i {
+  color: #6366f1;
+  font-size: 0.875rem;
+}
+
+.room-description {
+  padding-top: 1rem;
+  border-top: 1px solid #f3f4f6;
+}
+
+.room-description p {
+  margin: 0;
+  color: #6b7280;
+  font-size: 0.875rem;
+  line-height: 1.6;
+}
+
+/* Tenant Card */
+.tenant-content {
+  padding: 1.25rem;
+}
+
+.tenant-profile {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.tenant-avatar-compact {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 1.25rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.tenant-info-compact {
+  flex: 1;
+}
+
+.tenant-name {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: #111827;
+}
+
+.tenant-contacts {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.contact-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+.contact-item i {
+  color: #6366f1;
+  width: 14px;
+  font-size: 0.875rem;
+}
+
+/* Notes Card */
+.notes-content {
+  padding: 1.25rem;
+  background: #fefce8;
+  border-left: 4px solid #eab308;
+  font-size: 0.875rem;
+  color: #713f12;
+  line-height: 1.6;
+  border-radius: 0 8px 8px 0;
+  margin: 1.25rem;
+  margin-left: 0;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .contract-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  .contract-left-col,
+  .contract-right-col {
+    gap: 1rem;
+  }
+  
+  .contract-meta {
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+    text-align: center;
+  }
+  
+  .contract-number {
+    font-size: 1rem;
+    line-height: 1.5;
+    padding: 0 1rem;
+  }
+  
+  .contract-view-header {
+    padding: 1.25rem 1rem;
+  }
+  
+  .contract-view-body {
+    padding: 1rem;
+  }
+  
+  .room-header-compact {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+  
+  .room-details-compact {
+    justify-content: center;
+  }
+  
+  .tenant-profile {
+    flex-direction: column;
+    text-align: center;
+  }
+}
+
+/* Animations */
+@keyframes modalSlideIn {
+  from {
+    transform: scale(0.9) translateY(-30px);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Contract Modal Specific Enhancements */
+.contract-modal .modal-content {
+  animation: modalSlideIn 0.4s ease-out;
+}
+
+.contract-section {
+  animation: fadeInUp 0.5s ease-out;
+}
+
+.contract-section:nth-child(1) { animation-delay: 0.1s; }
+.contract-section:nth-child(2) { animation-delay: 0.2s; }
+.contract-section:nth-child(3) { animation-delay: 0.3s; }
+.contract-section:nth-child(4) { animation-delay: 0.4s; }
+
+/* Image Lightbox */
+.image-lightbox {
+  display: none;
+  position: fixed;
+  z-index: 9999;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.9);
+}
+
+.lightbox-content {
+  position: relative;
+  margin: auto;
+  padding: 20px;
+  width: 90%;
+  max-width: 900px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.lightbox-image {
+  width: 100%;
+  height: auto;
+  border-radius: var(--radius-lg);
+}
+
+.lightbox-close {
+  position: absolute;
+  top: 15px;
+  right: 35px;
+  color: #f1f1f1;
+  font-size: 40px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.lightbox-close:hover {
+  color: #ccc;
+}
+
+/* Responsive Design for Contract Modal */
+@media (max-width: 768px) {
+  .contract-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+  
+  .contract-info-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .room-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .room-specs {
+    justify-content: space-between;
+  }
+  
+  .tenant-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+/* Contract Cards Grid for Dashboard */
+.contracts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.contract-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  transition: all 0.3s ease;
+  box-shadow: var(--shadow-sm);
+  position: relative;
+  overflow: hidden;
+}
+
+.contract-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+  border-color: var(--accent-blue);
+}
+
+.contract-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.contract-info h3 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.contract-id {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  font-weight: 400;
+}
+
+.contract-status {
+  margin-left: auto;
+}
+
+.contract-details-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.contract-detail {
+  background: var(--bg-secondary);
+  padding: 0.75rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-light);
+}
+
+.contract-detail-label {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  margin-bottom: 0.25rem;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.contract-detail-value {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.contract-detail-value.money {
+  color: var(--accent-green);
+  font-size: 1rem;
+}
+
+.contract-period {
+  background: linear-gradient(135deg, var(--accent-blue), var(--accent-green));
+  color: white;
+  padding: 0.75rem;
+  border-radius: var(--radius-md);
+  margin-bottom: 1rem;
+}
+
+.contract-period-label {
+  font-size: 0.75rem;
+  opacity: 0.9;
+  margin-bottom: 0.25rem;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+}
+
+.contract-period-dates {
+  font-size: 0.875rem;
+  font-weight: 500;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.contract-room-info {
+  background: var(--bg-accent);
+  border-radius: var(--radius-md);
+  padding: 1rem;
+  margin-bottom: 1rem;
+  border: 1px solid var(--border-light);
+}
+
+.room-name {
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.room-address {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.contract-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.contract-link {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.375rem 0.75rem;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-light);
+  transition: all 0.2s ease;
+}
+
+.contract-link:hover {
+  background: var(--accent-blue);
+  color: white;
+  text-decoration: none;
+}
+
+.contract-view-btn {
+  background: linear-gradient(135deg, var(--primary), var(--primary-light));
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius-md);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.contract-view-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.empty-contracts {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: var(--text-muted);
+  background: var(--bg-secondary);
+  border-radius: var(--radius-lg);
+  border: 2px dashed var(--border);
+}
+
+.empty-contracts i {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  opacity: 0.5;
+}
+
+/* Responsive design for contract cards */
+@media (max-width: 768px) {
+  .contracts-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  .contract-card {
+    padding: 1rem;
+  }
+  
+  .contract-details-grid {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+  
+  .contract-actions {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .contract-period-dates {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
   }
 }

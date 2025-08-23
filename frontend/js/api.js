@@ -279,10 +279,46 @@ class RentalAPI {
   }
 
   async createContract(contractData) {
+    console.log('Sending contract data:', contractData);
+    
     return await this.request('/contracts/', {
       method: 'POST',
       body: JSON.stringify(contractData),
     });
+  }
+
+  // Create contract with file upload support
+  async createContractWithFile(formData) {
+    const url = `${this.baseURL}/contracts/`;
+    const config = {
+      method: 'POST',
+      body: formData, // FormData automatically sets correct Content-Type
+    };
+
+    // Add auth token if available
+    if (this.token) {
+      config.headers = {
+        'Authorization': `Bearer ${this.token}`,
+      };
+    }
+
+    try {
+      const response = await fetch(url, config);
+      
+      // Handle 401 - try refresh token
+      if (response.status === 401 && this.refreshToken) {
+        await this.refreshAccessToken();
+        // Retry with new token
+        config.headers['Authorization'] = `Bearer ${this.token}`;
+        const retryResponse = await fetch(url, config);
+        return await this.handleResponse(retryResponse);
+      }
+
+      return await this.handleResponse(response);
+    } catch (error) {
+      console.error('API request failed:', error);
+      throw error;
+    }
   }
 
   async updateContract(id, contractData) {
@@ -390,6 +426,49 @@ class RentalAPI {
     const endpoint = period ? `/reports/arrears/?period=${period}` : '/reports/arrears/';
     return await this.request(endpoint);
   }
+  
+  // RentalRequest methods
+  async getRentalRequests(params = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    const endpoint = queryString ? `/rental-requests/?${queryString}` : '/rental-requests/';
+    return await this.request(endpoint);
+  }
+  
+  async getRentalRequest(id) {
+    return await this.request(`/rental-requests/${id}/`);
+  }
+  
+  async createRentalRequest(requestData) {
+    // Đảm bảo viewing_time được cung cấp
+    if (!requestData.viewing_time) {
+      throw new Error("Thời gian xem nhà là bắt buộc. Vui lòng chọn thời gian xem nhà.");
+    }
+    
+    console.log('Sending rental request data:', requestData);
+    
+    return await this.request('/rental-requests/', {
+      method: 'POST',
+      body: JSON.stringify(requestData),
+    });
+  }
+  
+  async cancelRentalRequest(id) {
+    return await this.request(`/rental-requests/${id}/cancel/`, {
+      method: 'POST'
+    });
+  }
+
+  async acceptRentalRequest(id) {
+    return await this.request(`/rental-requests/${id}/accept/`, {
+      method: 'POST'
+    });
+  }
+
+  async declineRentalRequest(id) {
+    return await this.request(`/rental-requests/${id}/decline/`, {
+      method: 'POST'
+    });
+  }
 
   // Tenant methods
   async getTenants(params = {}) {
@@ -420,6 +499,17 @@ class RentalAPI {
     return await this.request(`/tenants/${id}/`, {
       method: 'DELETE',
     });
+  }
+
+  // User methods
+  async getUser(id) {
+    return await this.request(`/users/${id}/`);
+  }
+
+  async getUsers(params = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    const endpoint = queryString ? `/users/?${queryString}` : '/users/';
+    return await this.request(endpoint);
   }
 }
 

@@ -5,18 +5,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Dashboard - Người thuê</title>
     <link rel="stylesheet" href="css/styles.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
   </head>
   <body>
     <header id="navbar"></header>
     <main class="container">
       <section class="section">
-        <h2>Yêu cầu thuê của tôi</h2>
+        <h2>Yêu cầu xem nhà của tôi</h2>
         <table class="table">
           <thead>
             <tr>
               <th>Phòng/Nhà</th>
               <th>Lời nhắn</th>
               <th>Gửi lúc</th>
+              <th>Thời gian xem nhà</th>
               <th>Trạng thái</th>
               <th>Hành động</th>
             </tr>
@@ -26,7 +28,11 @@
       </section>
       <section class="section">
         <h2>Hợp đồng của tôi</h2>
-        <table class="table">
+        <div class="contracts-grid" id="contracts-grid">
+          <!-- Contracts will be rendered here -->
+        </div>
+        <!-- Fallback table for mobile or when no contracts -->
+        <table class="table" id="contracts-table" style="display: none;">
           <thead>
             <tr>
               <th>Phòng/Nhà</th>
@@ -54,12 +60,37 @@
         </div>
       </section>
     </main>
+
+    <!-- Modal xem chi tiết hợp đồng -->
+    <div id="contractModal" class="modal">
+      <div class="modal-content contract-modal">
+        <div class="modal-header">
+          <h3 id="contractModalTitle">
+            <i class="fas fa-file-contract"></i> Chi tiết hợp đồng
+          </h3>
+          <span class="close" onclick="closeContractModal()">&times;</span>
+        </div>
+        <div class="modal-body">
+          <div class="contract-details" id="contractDetailsContent">
+            <!-- Nội dung chi tiết hợp đồng sẽ được load bằng JS -->
+          </div>
+          <div class="modal-actions">
+            <button class="btn btn-info" id="downloadContractBtn" onclick="downloadContract()" style="display: none;">
+              <i class="fas fa-download"></i> Tải xuống
+            </button>
+            <button class="btn btn-secondary" onclick="closeContractModal()">
+              <i class="fas fa-times"></i> Đóng
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <script src="js/api.js"></script>
     <script src="js/storage.js"></script>
     <script src="js/auth.js"></script>
     <script src="js/common.js"></script>
-    <script src="js/notifications.js"></script>
     <script src="js/main.js"></script>
-    <script src="js/tenant.js"></script>
+    <script src="js/dashboard.js"></script>
   </body>
 </html>

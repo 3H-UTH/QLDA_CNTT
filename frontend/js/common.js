@@ -117,32 +117,7 @@ function setActiveNavItem() {
     });
 }
 
-// Common UI functions
-function showNotification(message, type = 'info') {
-    const notification = document.createElement('div');
-    notification.className = `notification notification-${type}`;
-    notification.innerHTML = `
-        <span>${message}</span>
-        <button onclick="this.parentElement.remove()">&times;</button>
-    `;
-    
-    // Add to page
-    let container = document.querySelector('.notification-container');
-    if (!container) {
-        container = document.createElement('div');
-        container.className = 'notification-container';
-        document.body.appendChild(container);
-    }
-    
-    container.appendChild(notification);
-    
-    // Auto remove after 5 seconds
-    setTimeout(() => {
-        if (notification.parentElement) {
-            notification.remove();
-        }
-    }, 5000);
-}
+// Common UI functions (notification system removed)
 
 function confirmAction(message, callback) {
     const modal = document.createElement('div');
@@ -289,22 +264,22 @@ function handleGlobalError(error) {
     console.error('Global error:', error);
     
     if (error.status === 401) {
-        showNotification('Phiên đăng nhập đã hết hạn', 'error');
+        alert('Phiên đăng nhập đã hết hạn');
         logout();
         return;
     }
     
     if (error.status === 403) {
-        showNotification('Bạn không có quyền thực hiện thao tác này', 'error');
+        alert('Bạn không có quyền thực hiện thao tác này');
         return;
     }
     
     if (error.status >= 500) {
-        showNotification('Lỗi máy chủ. Vui lòng thử lại sau', 'error');
+        alert('Lỗi máy chủ. Vui lòng thử lại sau');
         return;
     }
     
-    showNotification(error.message || 'Đã xảy ra lỗi', 'error');
+    alert(error.message || 'Đã xảy ra lỗi');
 }
 
 // URL parameters utility
@@ -363,7 +338,6 @@ window.authUtils = {
 };
 
 window.uiUtils = {
-    showNotification,
     confirmAction,
     showGlobalLoading,
     hideGlobalLoading,
