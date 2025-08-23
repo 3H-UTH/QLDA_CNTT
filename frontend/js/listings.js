@@ -1,10 +1,33 @@
-// Function to get rooms from API (using the API client)
+// Function to get rooms from API (robust: handles missing api client and paginated responses)
 async function fetchRoomsFromAPI() {
   try {
     console.log('fetchRoomsFromAPI: Starting API call...');
-    const rooms = await api.getRooms();
-    console.log('fetchRoomsFromAPI: Successfully fetched rooms from API:', rooms.length, 'rooms');
-    return rooms;
+
+    // Ensure API client exists
+    if (typeof api === 'undefined') {
+      console.warn('fetchRoomsFromAPI: api client not found. Attempting to create one...');
+      if (typeof RentalAPI !== 'undefined') {
+        window.api = new RentalAPI();
+      }
+    }
+
+    let data;
+    if (typeof api !== 'undefined' && typeof api.getRooms === 'function') {
+      data = await api.getRooms();
+    } else {
+      console.warn('fetchRoomsFromAPI: api client still unavailable, fallback to fetch');
+      const token = localStorage.getItem('access_token');
+      const resp = await fetch('http://127.0.0.1:8000/api/rooms/', {
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+      });
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      data = await resp.json();
+    }
+
+    // Normalize to array: support both array and paginated object {results: []}
+    const items = Array.isArray(data) ? data : (data?.results || []);
+    console.log('fetchRoomsFromAPI: Successfully fetched rooms from API:', items.length, 'rooms');
+    return items;
   } catch (error) {
     console.error('fetchRoomsFromAPI: Error fetching rooms from API:', error);
     // Return empty array on error, API client handles fallback

@@ -295,9 +295,11 @@ async function handleRoomSubmit(event) {
             }
         }
         
+        // Determine if this was an update or create operation based on API call
+        const isUpdate = result && result.id && currentEditingRoom && currentEditingRoom.id;
         hideRoomModal();
         await loadRooms();
-        showSuccess(currentEditingRoom ? 'Cập nhật phòng thành công!' : 'Thêm phòng thành công!');
+        showSuccess(isUpdate ? 'Cập nhật phòng thành công!' : 'Thêm phòng thành công!');
         
     } catch (error) {
         console.error('Error saving room:', error);

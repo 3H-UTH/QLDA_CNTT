@@ -96,6 +96,15 @@ document.addEventListener("DOMContentLoaded", async () => {
       grid.innerHTML = '<div class="loading-message"><i class="fas fa-spinner fa-spin"></i><p>Đang tải dữ liệu yêu cầu xem nhà...</p></div>';
       tbody.innerHTML = '<tr><td colspan="7" class="help">Đang tải dữ liệu yêu cầu xem nhà...</td></tr>';
 
+      // Luôn tải danh sách hợp đồng mới nhất trước
+      console.log('Tải danh sách hợp đồng...');
+      const contractsResponse = await api.getContracts();
+      const contracts = Array.isArray(contractsResponse) ? contractsResponse :
+                       (contractsResponse && Array.isArray(contractsResponse.results) ? 
+                        contractsResponse.results : []);
+      allContracts = contracts || [];
+      console.log('Đã tải', allContracts.length, 'hợp đồng');
+      
       // Tải yêu cầu xem nhà từ API mới
       const rentalRequestsResponse = await api.getRentalRequests();
       console.log('Rental Requests response:', rentalRequestsResponse);
@@ -105,8 +114,25 @@ document.addEventListener("DOMContentLoaded", async () => {
                        (rentalRequestsResponse && Array.isArray(rentalRequestsResponse.results) ? 
                         rentalRequestsResponse.results : []);
       
+      console.log('Kiểm tra và cập nhật trạng thái các yêu cầu...');
+      // Cập nhật trạng thái của yêu cầu dựa trên hợp đồng
+      const updatedRequests = rentalRequests.map(request => {
+        // Kiểm tra xem yêu cầu đã có hợp đồng ACTIVE chưa
+        const hasActiveContract = allContracts.some(contract => 
+          contract.rental_request === request.id && contract.status === 'ACTIVE'
+        );
+        
+        // Nếu có hợp đồng ACTIVE, đánh dấu yêu cầu là CONTRACTED
+        if (hasActiveContract) {
+          console.log(`Yêu cầu #${request.id} đã có hợp đồng ACTIVE, đánh dấu là CONTRACTED`);
+          return {...request, displayStatus: 'CONTRACTED'};
+        }
+        
+        return request;
+      });
+      
       // Lưu tất cả yêu cầu vào biến toàn cục
-      allRequests = rentalRequests || [];
+      allRequests = updatedRequests || [];
       console.log('Processed rental requests array:', allRequests);
       
       // Kiểm tra xem có dữ liệu không
@@ -267,10 +293,15 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     // Try to safely extract data with default values
-    const statusClass = getStatusClass(request.status || 'UNKNOWN');
-    const statusText = getStatusText(request.status || 'UNKNOWN');
+    // Sử dụng displayStatus nếu có (khi có hợp đồng ACTIVE) hoặc status thông thường
+    const status = request.displayStatus || request.status || 'UNKNOWN';
+    const statusClass = getStatusClass(status);
+    const statusText = getStatusText(status);
     const createdAt = new Date(request.created_at || Date.now()).toLocaleString('vi-VN');
     const viewingTime = new Date(request.viewing_time || Date.now()).toLocaleString('vi-VN');
+    
+    // Kiểm tra xem yêu cầu này có hợp đồng ACTIVE không
+    const hasActiveContract = request.displayStatus === 'CONTRACTED';
     
     return `
       <tr data-request-id="${request.id}">
@@ -311,7 +342,14 @@ document.addEventListener("DOMContentLoaded", async () => {
             <button class="btn btn-sm btn-primary" onclick="viewRequest(${request.id})">
               <i class="fas fa-eye"></i> Xem
             </button>
-            ${request.status === 'PENDING' ? `
+            ${hasActiveContract ? `
+              <button class="btn btn-sm btn-info" onclick="viewContractForRequest(${request.id})" title="Xem hợp đồng">
+                <i class="fas fa-file-contract"></i> Xem HĐ
+              </button>
+              <button class="btn btn-sm btn-danger" onclick="cancelContract(${request.id})" title="Hủy hợp đồng">
+                <i class="fas fa-ban"></i> Hủy HĐ
+              </button>
+            ` : request.status === 'PENDING' ? `
               <button class="btn btn-sm btn-success" onclick="quickApprove(${request.id})" title="Chấp nhận">
                 <i class="fas fa-check"></i>
               </button>
@@ -324,6 +362,9 @@ document.addEventListener("DOMContentLoaded", async () => {
             ` : request.status === 'ACCEPTED' ? `
               <button class="btn btn-sm btn-warning" onclick="createContract(${request.id})" title="Lập hợp đồng">
                 <i class="fas fa-file-contract"></i> HĐ
+              </button>
+              <button class="btn btn-sm btn-danger" onclick="cancelRequest(${request.id})" title="Hủy yêu cầu">
+                <i class="fas fa-ban"></i> Hủy
               </button>
             ` : ''}
           </div>
@@ -513,9 +554,15 @@ document.addEventListener("DOMContentLoaded", async () => {
     // Ensure allRequests is an array
     const requests = Array.isArray(allRequests) ? allRequests : [];
     
+    // Debug logging
+    console.log('Updating request stats with requests:', requests);
+    console.log('Request statuses:', requests.map(r => r?.status));
+    
     const pending = requests.filter(r => r && r.status === 'PENDING').length;
-    const approved = requests.filter(r => r && r.status === 'ACTIVE').length;
-    const rejected = requests.filter(r => r && (r.status === 'ENDED' || r.status === 'REJECTED')).length;
+    const approved = requests.filter(r => r && r.status === 'ACCEPTED').length;
+    const rejected = requests.filter(r => r && r.status === 'DECLINED').length;
+
+    console.log('Stats: pending:', pending, 'approved:', approved, 'rejected:', rejected);
 
     const pendingEl = document.getElementById('pendingCount');
     const approvedEl = document.getElementById('approvedCount');
@@ -537,13 +584,25 @@ document.addEventListener("DOMContentLoaded", async () => {
     
     const totalTenants = tenants.length;
     
-    const monthlyRevenue = contracts
-      .filter(c => c && c.status === 'ACTIVE')
-      .reduce((sum, c) => sum + (c.monthly_rent || 0), 0);
+    // Lọc và debug các hợp đồng đang hoạt động
+    const activeContracts = contracts.filter(c => c && c.status === 'ACTIVE');
+    console.log('Active contracts:', activeContracts);
+    
+    // Tính tổng thu nhập hàng tháng một cách an toàn hơn
+    let monthlyRevenue = 0;
+    for (const contract of activeContracts) {
+      console.log('Contract monthly_rent:', contract.monthly_rent, typeof contract.monthly_rent);
+      const rent = parseFloat(contract.monthly_rent) || 0;
+      monthlyRevenue += rent;
+    }
+    console.log('Total monthly revenue calculated:', monthlyRevenue);
 
     const activeEl = document.getElementById('activeTenantCount');
     const totalEl = document.getElementById('totalTenantCount');
     const revenueEl = document.getElementById('monthlyRevenue');
+    
+    console.log('Monthly Revenue before formatting:', monthlyRevenue);
+    console.log('Monthly Revenue type:', typeof monthlyRevenue);
     
     if (activeEl) activeEl.textContent = activeTenants;
     if (totalEl) totalEl.textContent = totalTenants;
@@ -567,7 +626,17 @@ document.addEventListener("DOMContentLoaded", async () => {
     let filteredRequests = allRequests;
 
     if (filter !== 'all') {
-      filteredRequests = allRequests.filter(r => r && r.status === filter);
+      if (filter === 'CONTRACTED') {
+        // Only show requests that have an ACTIVE contract detected earlier
+        filteredRequests = allRequests.filter(r => r && r.displayStatus === 'CONTRACTED');
+      } else {
+        // Exclude contracted items from other filters
+        filteredRequests = allRequests.filter(r => {
+          if (!r) return false;
+          if (r.displayStatus === 'CONTRACTED') return false;
+          return r.status === filter;
+        });
+      }
     }
 
     if (currentView === 'cards') {
@@ -641,6 +710,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       'ENDED': 'rejected',  // for backward compatibility
       'REJECTED': 'rejected',
       'SUSPENDED': 'suspended',
+      'CONTRACTED': 'success', // Trạng thái cho yêu cầu đã có hợp đồng ACTIVE
       'UNKNOWN': 'pending'
     };
     return statusMap[status] || 'pending';
@@ -656,6 +726,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       'ENDED': 'Đã từ chối',     // for backward compatibility
       'REJECTED': 'Đã từ chối',
       'SUSPENDED': 'Tạm dừng',
+      'CONTRACTED': 'Đã lập hợp đồng', // Nhãn cho yêu cầu đã có hợp đồng ACTIVE
       'UNKNOWN': 'Không xác định'
     };
     return statusMap[status] || 'Không xác định';
@@ -842,7 +913,8 @@ document.addEventListener("DOMContentLoaded", async () => {
             </div>
             <div class="detail-item">
               <label>Trạng thái:</label>
-              <span class="badge ${getStatusClass(request.status)}">${getStatusText(request.status)}</span>
+              <span class="badge ${getStatusClass(request.displayStatus || request.status)}">${getStatusText(request.displayStatus || request.status)}</span>
+              ${request.displayStatus ? `<small class="text-muted">(${getStatusText(request.status)} → ${getStatusText(request.displayStatus)})</small>` : ''}
             </div>
           </div>
         </div>
@@ -856,14 +928,49 @@ document.addEventListener("DOMContentLoaded", async () => {
       const rejectBtn = document.getElementById('rejectBtn');
       const contractBtn = document.getElementById('contractBtn');
       
-      if (request.status === 'PENDING') {
-        if (approveBtn) approveBtn.style.display = 'inline-block';
-        if (rejectBtn) rejectBtn.style.display = 'inline-block';
-        if (contractBtn) contractBtn.style.display = 'inline-block';
-      } else if (request.status === 'ACCEPTED') {
+      // Kiểm tra xem yêu cầu này có hợp đồng ACTIVE không
+      const hasActiveContract = request.displayStatus === 'CONTRACTED';
+      
+      if (hasActiveContract) {
+        // Đã có hợp đồng ACTIVE
         if (approveBtn) approveBtn.style.display = 'none';
         if (rejectBtn) rejectBtn.style.display = 'none';
-        if (contractBtn) contractBtn.style.display = 'inline-block';
+        if (contractBtn) {
+          contractBtn.innerHTML = '<i class="fas fa-file-contract"></i> Xem hợp đồng';
+          contractBtn.onclick = function() { viewContractForRequest(request.id); };
+          contractBtn.style.display = 'inline-block';
+        }
+        // Thêm nút hủy hợp đồng
+        const cancelBtn = document.getElementById('rejectBtn');
+        if (cancelBtn) {
+          cancelBtn.innerHTML = '<i class="fas fa-ban"></i> Hủy hợp đồng';
+          cancelBtn.onclick = function() { cancelContract(request.id); };
+          cancelBtn.style.display = 'inline-block';
+        }
+      } else if (request.status === 'PENDING') {
+        if (approveBtn) approveBtn.style.display = 'inline-block';
+        if (rejectBtn) {
+          rejectBtn.innerHTML = '<i class="fas fa-times"></i> Từ chối';
+          rejectBtn.onclick = rejectRequest;
+          rejectBtn.style.display = 'inline-block';
+        }
+        if (contractBtn) {
+          contractBtn.innerHTML = '<i class="fas fa-file-contract"></i> Lập hợp đồng';
+          contractBtn.onclick = function() { createContract(request.id); };
+          contractBtn.style.display = 'inline-block';
+        }
+      } else if (request.status === 'ACCEPTED') {
+        if (approveBtn) approveBtn.style.display = 'none';
+        if (rejectBtn) {
+          rejectBtn.innerHTML = '<i class="fas fa-ban"></i> Hủy yêu cầu';
+          rejectBtn.onclick = function() { cancelRequest(request.id); };
+          rejectBtn.style.display = 'inline-block';
+        }
+        if (contractBtn) {
+          contractBtn.innerHTML = '<i class="fas fa-file-contract"></i> Lập hợp đồng';
+          contractBtn.onclick = function() { createContract(request.id); };
+          contractBtn.style.display = 'inline-block';
+        }
       } else {
         if (approveBtn) approveBtn.style.display = 'none';
         if (rejectBtn) rejectBtn.style.display = 'none';
@@ -1375,9 +1482,13 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     // Try to safely extract data with default values
-    const statusInfo = getStatusInfo(request.status || 'UNKNOWN');
+    const status = request.displayStatus || request.status || 'UNKNOWN';
+    const statusInfo = getStatusInfo(status);
     const createdAt = formatDate(request.created_at || new Date());
     const viewingTime = formatDate(request.viewing_time || request.created_at || new Date());
+    
+    // Kiểm tra xem yêu cầu này có hợp đồng ACTIVE không
+    const hasActiveContract = request.displayStatus === 'CONTRACTED';
     
     return `
       <div class="request-card" onclick="viewRequest(${request.id})">
@@ -1415,7 +1526,14 @@ document.addEventListener("DOMContentLoaded", async () => {
         </div>
         
         <div class="card-actions">
-          ${request.status === 'PENDING' ? `
+          ${hasActiveContract ? `
+            <button class="btn btn-sm btn-info" onclick="event.stopPropagation(); viewContractForRequest(${request.id})">
+              <i class="fas fa-file-contract"></i> Xem hợp đồng
+            </button>
+            <button class="btn btn-sm btn-danger" onclick="event.stopPropagation(); cancelContract(${request.id})">
+              <i class="fas fa-ban"></i> Hủy hợp đồng
+            </button>
+          ` : request.status === 'PENDING' ? `
             <button class="btn btn-sm btn-success" onclick="event.stopPropagation(); quickApprove(${request.id})">
               <i class="fas fa-check"></i> Chấp nhận
             </button>
@@ -1428,6 +1546,9 @@ document.addEventListener("DOMContentLoaded", async () => {
           ` : request.status === 'ACCEPTED' ? `
             <button class="btn btn-sm btn-warning" onclick="event.stopPropagation(); createContract(${request.id})">
               <i class="fas fa-file-contract"></i> Lập hợp đồng
+            </button>
+            <button class="btn btn-sm btn-danger" onclick="event.stopPropagation(); cancelRequest(${request.id})">
+              <i class="fas fa-ban"></i> Hủy
             </button>
             <button class="btn btn-sm btn-primary" onclick="event.stopPropagation(); viewRequest(${request.id})">
               <i class="fas fa-eye"></i> Xem chi tiết
@@ -1507,6 +1628,8 @@ document.addEventListener("DOMContentLoaded", async () => {
         return { class: 'ended', text: 'Đã từ chối' };
       case 'CANCELED':
         return { class: 'canceled', text: 'Đã hủy' };
+      case 'CONTRACTED':
+        return { class: 'success', text: 'Đã lập hợp đồng' };
       case 'ACTIVE': // backward compatibility
         return { class: 'active', text: 'Đã chấp nhận' };
       case 'ENDED': // backward compatibility
@@ -1764,7 +1887,11 @@ document.addEventListener("DOMContentLoaded", async () => {
       
       closeContractModal();
       showToast('Tạo hợp đồng thành công!', 'success');
-      await loadAllData();
+      
+      // Tải lại dữ liệu và cập nhật giao diện
+      console.log('Đang tải lại dữ liệu sau khi tạo hợp đồng...');
+      await loadRequests(); // Tải lại danh sách yêu cầu và hợp đồng
+      await loadTenants(); // Cập nhật danh sách người thuê
       
     } catch (error) {
       console.error('Error creating contract:', error);
@@ -1805,6 +1932,80 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
     if (event.target === tenantContractModal) {
       closeTenantContractModal();
+    }
+  };
+
+  // Hàm xem hợp đồng từ một yêu cầu thuê
+  window.viewContractForRequest = async function(requestId) {
+    try {
+      // Tìm yêu cầu thuê
+      const request = allRequests.find(r => r.id === requestId);
+      if (!request) {
+        showToast('Không tìm thấy yêu cầu thuê', 'error');
+        return;
+      }
+
+      // Tìm hợp đồng ACTIVE liên quan đến yêu cầu này
+      const contract = allContracts.find(c => c.rental_request === request.id && c.status === 'ACTIVE');
+      if (!contract) {
+        showToast('Không tìm thấy hợp đồng liên quan đến yêu cầu này', 'error');
+        return;
+      }
+
+      // Lấy thông tin phòng và người thuê
+      const room = await api.getRoom(contract.room);
+      const tenant = await api.getTenant(contract.tenant);
+
+      // Hiển thị hợp đồng
+      showTenantContractDetailsModal(contract, room, tenant);
+    } catch (error) {
+      console.error('Error viewing contract for request:', error);
+      showToast('Lỗi khi tải thông tin hợp đồng: ' + error.message, 'error');
+    }
+  };
+
+  // Hàm hủy yêu cầu thuê
+  window.cancelRequest = async function(requestId) {
+    if (confirm('Bạn có chắc chắn muốn hủy yêu cầu này không?')) {
+      try {
+        await api.updateRentalRequest(requestId, { status: 'CANCELED' });
+        showToast('Đã hủy yêu cầu thành công', 'success');
+        await loadRequests(); // Tải lại danh sách yêu cầu
+      } catch (error) {
+        console.error('Error canceling request:', error);
+        showToast('Lỗi khi hủy yêu cầu: ' + error.message, 'error');
+      }
+    }
+  };
+
+  // Hàm hủy hợp đồng
+  window.cancelContract = async function(requestId) {
+    if (confirm('Bạn có chắc chắn muốn hủy hợp đồng này không? Hành động này sẽ chuyển trạng thái hợp đồng sang SUSPENDED.')) {
+      try {
+        // Tìm yêu cầu thuê
+        const request = allRequests.find(r => r.id === requestId);
+        if (!request) {
+          showToast('Không tìm thấy yêu cầu thuê', 'error');
+          return;
+        }
+
+        // Tìm hợp đồng ACTIVE liên quan đến yêu cầu này
+        const contract = allContracts.find(c => c.rental_request === request.id && c.status === 'ACTIVE');
+        if (!contract) {
+          showToast('Không tìm thấy hợp đồng liên quan đến yêu cầu này', 'error');
+          return;
+        }
+
+        // Cập nhật trạng thái hợp đồng thành SUSPENDED
+        await api.updateContract(contract.id, { status: 'SUSPENDED' });
+        showToast('Đã hủy hợp đồng thành công', 'success');
+        
+        // Tải lại danh sách yêu cầu và hợp đồng
+        await loadAllData();
+      } catch (error) {
+        console.error('Error canceling contract:', error);
+        showToast('Lỗi khi hủy hợp đồng: ' + error.message, 'error');
+      }
     }
   };
 });
