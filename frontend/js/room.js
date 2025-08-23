@@ -177,46 +177,130 @@ function renderRoom(r) {
   if (!u) {
     area.innerHTML = `<a class="btn" href="login.html?next=${encodeURIComponent(
       location.pathname + location.search
-    )}">Đăng nhập để gửi yêu cầu thuê</a>`;
+    )}">Đăng nhập để gửi yêu cầu xem nhà</a>`;
   } else if (u.role !== "TENANT") {
     area.innerHTML = `<p class="help">Bạn đang đăng nhập là <b>${u.role}</b>. Chỉ người thuê mới gửi yêu cầu.</p>`;
   } else {
     area.innerHTML = `
     <form id="reqForm">
-      <label>Lời nhắn cho chủ nhà</label>
-      <textarea class="input" id="message" rows="3" placeholder="Mình muốn xem phòng vào cuối tuần..."></textarea>
-      <button class="btn" type="submit">Gửi yêu cầu thuê</button>
+      <div style="margin-bottom: 1rem;">
+        <label>Lời nhắn cho chủ nhà</label>
+        <textarea class="input" id="message" rows="3" placeholder="Tôi quan tâm đến căn phòng này và muốn xem..."></textarea>
+      </div>
+      
+      <div style="margin-bottom: 1rem;">
+        <label>Thời gian muốn xem nhà <span style="color: red">*</span></label>
+        <input type="datetime-local" class="input" id="viewing-time" required aria-required="true">
+        <p class="help" style="margin-top: 5px; font-size: 0.85rem; color: #666;">Lưu ý: Thời gian xem nhà phải cách thời điểm hiện tại ít nhất 30 phút.</p>
+      </div>
+      
+      <button class="btn" type="submit">Gửi yêu cầu xem nhà</button>
     </form>
-    <p class="help">Yêu cầu sẽ được gửi đến hệ thống quản lý.</p>`;
+    <p class="help">Yêu cầu xem nhà sẽ được gửi đến hệ thống quản lý.</p>`;
+    
+    // Thiết lập thời gian mặc định là ngày mai lúc 12 giờ trưa
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setHours(12, 0, 0, 0);
+    
+    // Format cho input datetime-local: YYYY-MM-DDThh:mm
+    const year = tomorrow.getFullYear();
+    const month = String(tomorrow.getMonth() + 1).padStart(2, '0');
+    const day = String(tomorrow.getDate()).padStart(2, '0');
+    const hours = String(tomorrow.getHours()).padStart(2, '0');
+    const minutes = String(tomorrow.getMinutes()).padStart(2, '0');
+    
+    const formattedDate = year + "-" + month + "-" + day + "T" + hours + ":" + minutes;
+    const viewingTimeInput = document.getElementById('viewing-time');
+    
+    // Đánh dấu trường thời gian là bắt buộc và thiết lập giá trị mặc định
+    viewingTimeInput.required = true;
+    viewingTimeInput.value = formattedDate;
+    
+    // Thêm sự kiện kiểm tra khi người dùng thay đổi thời gian
+    viewingTimeInput.addEventListener('change', function() {
+      validateViewingTime(this);
+    });
+    
+    // Hàm kiểm tra thời gian xem nhà
+    function validateViewingTime(input) {
+      const selectedTime = new Date(input.value);
+      const currentTime = new Date();
+      const minAllowedTime = new Date(currentTime.getTime() + 30 * 60000); // thêm 30 phút
+      const helpText = input.parentElement.querySelector('.help');
+      
+      if (selectedTime < minAllowedTime) {
+        // Thêm thông báo lỗi và class lỗi
+        input.setCustomValidity("Thời gian xem nhà phải cách thời điểm hiện tại ít nhất 30 phút.");
+        input.reportValidity();
+        input.style.borderColor = "red";
+        
+        if (helpText) {
+          helpText.style.color = "red";
+          helpText.innerHTML = `<i class="fas fa-exclamation-circle"></i> Lỗi: Thời gian xem nhà phải cách thời điểm hiện tại ít nhất 30 phút! (${currentTime.toLocaleTimeString()} + 30 phút)`;
+        }
+        
+        return false;
+      } else {
+        // Đặt lại trạng thái bình thường
+        input.setCustomValidity("");
+        input.style.borderColor = "";
+        
+        if (helpText) {
+          helpText.style.color = "#666";
+          helpText.innerHTML = "Lưu ý: Thời gian xem nhà phải cách thời điểm hiện tại ít nhất 30 phút.";
+        }
+        
+        return true;
+      }
+    }
     
     qs("#reqForm").addEventListener("submit", async (e) => {
       e.preventDefault();
+      
+      // Kiểm tra xem trường thời gian có giá trị hay không
+      const viewingTimeInput = qs("#viewing-time");
+      if (!viewingTimeInput.value || viewingTimeInput.value.trim() === "") {
+        viewingTimeInput.style.borderColor = "red";
+        alert("Vui lòng chọn thời gian xem nhà!");
+        viewingTimeInput.focus();
+        return;
+      }
+      
+      // Kiểm tra thời gian xem nhà có hợp lệ không
+      if (!validateViewingTime(viewingTimeInput)) {
+        // Validation đã hiển thị lỗi trong validateViewingTime()
+        return;
+      }
       
       // Validate tenant information before sending request
       await validateBeforeRental(async (profile) => {
         // User has all required info, proceed with rental request
         const msg = qs("#message").value.trim();
+        const viewingTime = viewingTimeInput.value; // Lấy giá trị từ input đã được validate
+        
+        if (!viewingTime || viewingTime.trim() === "") {
+          alert("Vui lòng chọn thời gian xem nhà!");
+          return;
+        }
+        
         try {
-          const contractData = {
+          // Tạo dữ liệu cho yêu cầu xem nhà (không phải hợp đồng)
+          const rentalRequestData = {
             room: r.id,
-            notes: msg
+            notes: msg,
+            viewing_time: viewingTime
           };
           
-          await api.createContract(contractData);
+          // Gọi API tạo yêu cầu xem nhà thay vì tạo hợp đồng
+          await api.createRentalRequest(rentalRequestData);
           
-          // Send notification to owners (simulate - in real app this would be done on backend)
-          if (window.notificationSystem) {
-            const user = currentUser();
-            window.notificationSystem.notifyRentalRequest(
-              user.full_name || user.username, 
-              r.name || `Phòng ${r.id}`
-            );
-          }
+          // Notification system removed; backend should handle any alerts to owners
           
-          alert("Đã gửi yêu cầu thuê phòng!");
+          alert("Đã gửi yêu cầu xem nhà!");
           window.location.href = "dashboard.html";
         } catch (error) {
-          console.error('Error creating contract request:', error);
+          console.error('Error creating rental request:', error);
           alert("Có lỗi xảy ra khi gửi yêu cầu: " + error.message);
         }
       }, (validation) => {

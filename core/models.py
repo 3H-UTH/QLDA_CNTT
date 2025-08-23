@@ -38,18 +38,48 @@ class Room(models.Model):
 
 
 
+class RentalRequest(models.Model):
+    PENDING = "PENDING"; ACCEPTED = "ACCEPTED"; DECLINED = "DECLINED"; CANCELED = "CANCELED"
+    STATUS = [(PENDING,"PENDING"), (ACCEPTED,"ACCEPTED"), (DECLINED,"DECLINED"), (CANCELED,"CANCELED")]
+
+    room = models.ForeignKey("core.Room", on_delete=models.PROTECT, related_name="rental_requests")
+    tenant = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="rental_requests", limit_choices_to={'role': 'TENANT'})
+    notes = models.TextField(blank=True, default='', help_text="Lời nhắn từ tenant khi gửi yêu cầu xem nhà")
+    status = models.CharField(max_length=10, choices=STATUS, default=PENDING)
+    
+    # Thời gian liên quan
+    created_at = models.DateTimeField(auto_now_add=True, help_text="Thời điểm gửi yêu cầu")
+    viewing_time = models.DateTimeField(help_text="Thời gian đề xuất xem nhà")
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Yêu cầu xem nhà #{self.id} - {self.tenant.username} - {self.room.name}"
+    
+    class Meta:
+        ordering = ['-created_at']
+
+
 class Contract(models.Model):
-    PENDING = "PENDING"; ACTIVE = "ACTIVE"; ENDED = "ENDED"; SUSPENDED = "SUSPENDED"
-    STATUS = [(PENDING,"PENDING"),(ACTIVE,"ACTIVE"),(ENDED,"ENDED"),(SUSPENDED,"SUSPENDED")]
+    ACTIVE = "ACTIVE"; ENDED = "ENDED"; SUSPENDED = "SUSPENDED"
+    STATUS = [(ACTIVE,"ACTIVE"), (ENDED,"ENDED"), (SUSPENDED,"SUSPENDED")]
 
     room = models.ForeignKey("core.Room", on_delete=models.PROTECT, related_name="contracts")
     tenant = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="contracts", limit_choices_to={'role': 'TENANT'})
-    start_date = models.DateField(null=True, blank=True)
-    end_date   = models.DateField(blank=True, null=True)
+    start_date = models.DateField(help_text="Ngày bắt đầu hợp đồng")
+    end_date = models.DateField(help_text="Ngày kết thúc hợp đồng")
+    monthly_rent = models.DecimalField(max_digits=12, decimal_places=2, default=0, help_text="Tiền thuê hàng tháng")
     deposit = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     billing_cycle = models.CharField(max_length=10, default="MONTHLY")
-    status = models.CharField(max_length=10, choices=STATUS, default=PENDING)
-    notes = models.TextField(blank=True, default='', help_text="Ghi chú từ tenant khi gửi yêu cầu")
+    status = models.CharField(max_length=10, choices=STATUS, default=ACTIVE)
+    notes = models.TextField(blank=True, default='', help_text="Ghi chú về hợp đồng")
+    
+    # Upload ảnh hợp đồng đã ký
+    contract_image = models.ImageField(upload_to='contracts/', blank=True, null=True, help_text="Ảnh hợp đồng đã ký (nếu có)")
+    
+    # Thông tin liên kết và thời gian
+    rental_request = models.OneToOneField("RentalRequest", null=True, blank=True, on_delete=models.SET_NULL, related_name="resulting_contract", help_text="Yêu cầu xem nhà dẫn đến hợp đồng này")
+    created_at = models.DateTimeField(default=timezone.now, help_text="Thời điểm tạo hợp đồng")
+    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         constraints = [

@@ -7,94 +7,149 @@ document.addEventListener("DOMContentLoaded", async () => {
   const cTbody = qs("#contract-tbody");
   
   if (reqTbody) {
-    reqTbody.innerHTML = '<tr><td colspan="5" class="help">Đang tải dữ liệu...</td></tr>';
+    reqTbody.innerHTML = '<tr><td colspan="6" class="help">Đang tải dữ liệu yêu cầu xem nhà...</td></tr>';
   }
   
   if (cTbody) {
-    cTbody.innerHTML = '<tr><td colspan="6" class="help">Đang tải dữ liệu...</td></tr>';
+    cTbody.innerHTML = '<tr><td colspan="6" class="help">Đang tải dữ liệu hợp đồng...</td></tr>';
   }
 
   try {
-    // Load contracts from API
-    console.log('Loading contracts for user:', u);
-    const contractsResponse = await api.getContracts();
-    console.log('Contracts received:', contractsResponse);
+    // Load rental requests and contracts separately
+    console.log('Loading data for user:', u);
     
-    // Ensure contracts is an array
-    const contracts = Array.isArray(contractsResponse) ? contractsResponse : 
-                     (contractsResponse && Array.isArray(contractsResponse.results) ? contractsResponse.results : []);
+    // PHẦN 1: Tải yêu cầu xem nhà từ API rental-requests
+    let rentalRequests = [];
+    try {
+      // Sử dụng API mới để tải yêu cầu xem nhà
+      const rentalRequestsResponse = await api.getRentalRequests();
+      console.log('Rental requests received:', rentalRequestsResponse);
+      
+      // Đảm bảo dữ liệu là một mảng
+      rentalRequests = Array.isArray(rentalRequestsResponse) ? rentalRequestsResponse : 
+                      (rentalRequestsResponse && Array.isArray(rentalRequestsResponse.results) ? 
+                       rentalRequestsResponse.results : []);
+      
+      console.log('Processed rental requests array:', rentalRequests);
+      
+      // Lọc các yêu cầu của người dùng hiện tại
+      rentalRequests = rentalRequests.filter(req => req.tenant === u.id);
+      console.log('My rental requests:', rentalRequests);
+    } catch (error) {
+      console.error('Error loading rental requests:', error);
+      rentalRequests = [];
+    }
     
-    console.log('Processed contracts array:', contracts);
-    const myContracts = contracts.filter((c) => c.tenant === u.id);
-    console.log('My contracts:', myContracts);
+    // PHẦN 2: Tải hợp đồng từ API contracts
+    let contracts = [];
+    try {
+      const contractsResponse = await api.getContracts();
+      console.log('Contracts received:', contractsResponse);
+      
+      // Đảm bảo contracts là một mảng
+      contracts = Array.isArray(contractsResponse) ? contractsResponse : 
+                 (contractsResponse && Array.isArray(contractsResponse.results) ? 
+                  contractsResponse.results : []);
+      
+      console.log('Processed contracts array:', contracts);
+      
+      // Lọc hợp đồng của người dùng hiện tại
+      contracts = contracts.filter(c => c.tenant === u.id);
+      console.log('My contracts:', contracts);
+    } catch (error) {
+      console.error('Error loading contracts:', error);
+      contracts = [];
+    }
     
-    // Separate pending requests from active contracts
-    const pendingRequests = myContracts.filter(c => c.status === 'PENDING');
-    const activeContracts = myContracts.filter(c => c.status !== 'PENDING');
-    
-    // Render requests table (pending contracts)
-    const reqTbody = qs("#req-tbody");
+    // Render yêu cầu xem nhà
     if (reqTbody) {
-      if (pendingRequests.length === 0) {
+      if (rentalRequests.length === 0) {
         reqTbody.innerHTML =
-          '<tr><td colspan="5" class="help">Chưa có yêu cầu nào.</td></tr>';
+          '<tr><td colspan="6" class="help">Chưa có yêu cầu xem nhà nào.</td></tr>';
       } else {
-        const requestRows = await Promise.all(pendingRequests.map(async (r) => {
+        const requestRows = await Promise.all(rentalRequests.map(async (r) => {
           try {
             // Validate request object
             if (!r || typeof r !== 'object') {
-              console.warn('Invalid request object:', r);
+              console.warn('Invalid rental request object:', r);
               return '';
             }
             
             const room = await api.getRoom(r.room);
             const roomName = room ? (room.name || room.title || room.room_number || `Phòng ${r.room}`) : `Phòng ${r.room}`;
-            const message = r.notes || r.message || 'Yêu cầu thuê phòng';
-            const createdAt = r.created_at || r.createdAt || new Date().toISOString();
+            const message = r.notes || r.message || 'Yêu cầu xem nhà';
+            // Lấy thời gian tạo yêu cầu
+            const createdAt = r.created_at || r.createdAt || r.created || r.date_created || r.dateCreated;
+            // Lấy thời gian xem nhà
+            const viewingTime = r.viewing_time || r.viewingTime;
+            
+            // Format trạng thái theo ngôn ngữ người dùng
+            let statusBadge = '';
+            switch(r.status) {
+              case 'PENDING':
+                statusBadge = '<span class="badge">Chờ xử lý</span>';
+                break;
+              case 'ACCEPTED':
+                statusBadge = '<span class="badge success">Đã chấp nhận</span>';
+                break;
+              case 'DECLINED':
+                statusBadge = '<span class="badge danger">Đã từ chối</span>';
+                break;
+              case 'CANCELED':
+                statusBadge = '<span class="badge secondary">Đã hủy</span>';
+                break;
+              default:
+                statusBadge = `<span class="badge">${r.status}</span>`;
+            }
+            
+            // Chỉ hiển thị nút hủy nếu trạng thái là PENDING
+            const cancelButton = r.status === 'PENDING' ? 
+              `<button class="btn secondary btn-cancel" data-id="${r.id}">Hủy</button>` : 
+              '';
             
             return `<tr>
               <td>${roomName}</td>
               <td>${message}</td>
-              <td>${new Date(createdAt).toLocaleString("vi-VN")}</td>
-              <td><span class="badge">pending</span></td>
-              <td>
-                <button class="btn secondary btn-cancel" data-id="${r.id}">Hủy</button>
-              </td>
+              <td>${createdAt ? new Date(createdAt).toLocaleString("vi-VN") : 'Đang cập nhật...'}</td>
+              <td>${viewingTime ? new Date(viewingTime).toLocaleString("vi-VN") : 'Đang cập nhật...'}</td>
+              <td>${statusBadge}</td>
+              <td>${cancelButton}</td>
             </tr>`;
           } catch (error) {
             console.error('Error loading room data for request:', r, error);
             return `<tr>
               <td>Phòng ${r.room || 'N/A'}</td>
-              <td>${r.notes || r.message || 'Yêu cầu thuê phòng'}</td>
-              <td>${new Date(r.created_at || r.createdAt || new Date()).toLocaleString("vi-VN")}</td>
-              <td><span class="badge">pending</span></td>
+              <td>${r.notes || r.message || 'Yêu cầu xem nhà'}</td>
+              <td>${r.created_at ? new Date(r.created_at).toLocaleString("vi-VN") : 'Đang cập nhật...'}</td>
+              <td>${r.viewing_time ? new Date(r.viewing_time).toLocaleString("vi-VN") : 'Đang cập nhật...'}</td>
+              <td><span class="badge">${r.status || 'PENDING'}</span></td>
               <td>
-                <button class="btn secondary btn-cancel" data-id="${r.id}">Hủy</button>
+                ${r.status === 'PENDING' ? `<button class="btn secondary btn-cancel" data-id="${r.id}">Hủy</button>` : ''}
               </td>
             </tr>`;
           }
         }));
         
-        // Filter out empty rows
+        // Lọc các hàng trống
         const validRequestRows = requestRows.filter(row => row.trim() !== '');
         
         if (validRequestRows.length === 0) {
           reqTbody.innerHTML =
-            '<tr><td colspan="5" class="help">Không có yêu cầu nào hiển thị được do lỗi dữ liệu.</td></tr>';
+            '<tr><td colspan="6" class="help">Không có yêu cầu nào hiển thị được do lỗi dữ liệu.</td></tr>';
         } else {
           reqTbody.innerHTML = validRequestRows.join("");
         }
         
-        // Add cancel button handlers
+        // Thêm handler cho nút hủy
         qsa(".btn-cancel").forEach((btn) =>
           btn.addEventListener("click", async (e) => {
             const id = btn.getAttribute("data-id");
-            if (confirm("Bạn có chắc chắn muốn hủy yêu cầu này?")) {
+            if (confirm("Bạn có chắc chắn muốn hủy yêu cầu xem nhà này?")) {
               try {
-                // For now, we don't have a delete contract endpoint, so just update status
-                // await api.deleteContract(id);
-                alert("Tính năng hủy yêu cầu sẽ được cập nhật sau");
-                // location.reload();
+                // Sử dụng API hủy yêu cầu xem nhà
+                await api.cancelRentalRequest(id);
+                alert("Đã hủy yêu cầu xem nhà thành công!");
+                location.reload();
               } catch (error) {
                 console.error('Error cancelling request:', error);
                 alert("Có lỗi xảy ra khi hủy yêu cầu: " + error.message);
@@ -104,15 +159,15 @@ document.addEventListener("DOMContentLoaded", async () => {
         );
       }
     }
-    
-    // Render contracts table (active contracts only)
+
+    // Render contracts table
     const cTbody = qs("#contract-tbody");
     if (cTbody) {
-      if (activeContracts.length === 0) {
+      if (contracts.length === 0) {
         cTbody.innerHTML =
           '<tr><td colspan="6" class="help">Chưa có hợp đồng nào.</td></tr>';
       } else {
-        const contractRows = await Promise.all(activeContracts.map(async (c) => {
+        const contractRows = await Promise.all(contracts.map(async (c) => {
           try {
             // Validate contract object
             if (!c || typeof c !== 'object') {
@@ -182,7 +237,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     
     if (reqTbody) {
       reqTbody.innerHTML =
-        `<tr><td colspan="5" class="help" style="color: var(--error);">${errorMessage}</td></tr>`;
+        `<tr><td colspan="6" class="help" style="color: var(--error);">${errorMessage}</td></tr>`;
     }
     
     if (cTbody) {

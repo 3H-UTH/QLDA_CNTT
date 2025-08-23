@@ -93,40 +93,50 @@ document.addEventListener("DOMContentLoaded", async () => {
       const tbody = document.getElementById('requests-tbody');
       
       // Show loading in both views
-      grid.innerHTML = '<div class="loading-message"><i class="fas fa-spinner fa-spin"></i><p>Đang tải dữ liệu...</p></div>';
-      tbody.innerHTML = '<tr><td colspan="5" class="help">Đang tải dữ liệu...</td></tr>';
+      grid.innerHTML = '<div class="loading-message"><i class="fas fa-spinner fa-spin"></i><p>Đang tải dữ liệu yêu cầu xem nhà...</p></div>';
+      tbody.innerHTML = '<tr><td colspan="7" class="help">Đang tải dữ liệu yêu cầu xem nhà...</td></tr>';
 
-      // Load all contracts (pending requests are contracts with status PENDING)
-      const contractsResponse = await api.getContracts();
-      console.log('Contracts response:', contractsResponse);
+      // Tải yêu cầu xem nhà từ API mới
+      const rentalRequestsResponse = await api.getRentalRequests();
+      console.log('Rental Requests response:', rentalRequestsResponse);
       
-      // Ensure contracts is an array
-      const contracts = Array.isArray(contractsResponse) ? contractsResponse : 
-                       (contractsResponse && Array.isArray(contractsResponse.results) ? contractsResponse.results : []);
+      // Đảm bảo dữ liệu là một mảng
+      const rentalRequests = Array.isArray(rentalRequestsResponse) ? rentalRequestsResponse : 
+                       (rentalRequestsResponse && Array.isArray(rentalRequestsResponse.results) ? 
+                        rentalRequestsResponse.results : []);
       
-      allRequests = contracts || [];
-      console.log('Processed requests array:', allRequests);
-
-      // Display in current view
-      if (currentView === 'cards') {
-        displayRequestsAsCards(allRequests);
+      // Lưu tất cả yêu cầu vào biến toàn cục
+      allRequests = rentalRequests || [];
+      console.log('Processed rental requests array:', allRequests);
+      
+      // Kiểm tra xem có dữ liệu không
+      if (allRequests.length === 0) {
+        grid.innerHTML = '<div class="empty-state"><i class="fas fa-info-circle"></i><p>Chưa có yêu cầu xem nhà nào.</p></div>';
+        tbody.innerHTML = '<tr><td colspan="7" class="help">Chưa có yêu cầu xem nhà nào.</td></tr>';
       } else {
-        displayRequests(allRequests);
+        // Display in current view
+        if (currentView === 'cards') {
+          displayRequestsAsCards(allRequests);
+        } else {
+          displayRequests(allRequests);
+        }
       }
       
       updateRequestsStats();
       updateTabBadges();
       
       // Load details for each request
-      setTimeout(() => loadRequestsDetails(), 500);
+      if (allRequests.length > 0) {
+        setTimeout(() => loadRequestsDetails(), 500);
+      }
 
     } catch (error) {
       console.error('Error loading requests:', error);
       const grid = document.getElementById('requests-grid');
       const tbody = document.getElementById('requests-tbody');
       
-      grid.innerHTML = `<div class="loading-message"><i class="fas fa-exclamation-triangle"></i><p>Lỗi tải dữ liệu: ${error.message}</p></div>`;
-      tbody.innerHTML = `<tr><td colspan="5" class="help" style="color: var(--danger);">Lỗi tải dữ liệu: ${error.message}</td></tr>`;
+      grid.innerHTML = `<div class="loading-message error"><i class="fas fa-exclamation-triangle"></i><p>Lỗi tải dữ liệu: ${error.message}</p></div>`;
+      tbody.innerHTML = `<tr><td colspan="7" class="help" style="color: var(--danger);">Lỗi tải dữ liệu: ${error.message}</td></tr>`;
     }
   }
 
@@ -250,9 +260,17 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   function createRequestRow(request) {
-    const statusClass = getStatusClass(request.status);
-    const statusText = getStatusText(request.status);
+    // Validate request object
+    if (!request || !request.id) {
+      console.warn('Invalid request object in createRequestRow:', request);
+      return '';
+    }
+
+    // Try to safely extract data with default values
+    const statusClass = getStatusClass(request.status || 'UNKNOWN');
+    const statusText = getStatusText(request.status || 'UNKNOWN');
     const createdAt = new Date(request.created_at || Date.now()).toLocaleString('vi-VN');
+    const viewingTime = new Date(request.viewing_time || Date.now()).toLocaleString('vi-VN');
     
     return `
       <tr data-request-id="${request.id}">
@@ -281,7 +299,8 @@ document.addEventListener("DOMContentLoaded", async () => {
         </td>
         <td>
           <div class="timestamp">
-            ${createdAt}
+            <div><i class="fas fa-calendar"></i> ${createdAt}</div>
+            <div><i class="fas fa-clock"></i> Hẹn xem: ${viewingTime}</div>
           </div>
         </td>
         <td>
@@ -293,11 +312,18 @@ document.addEventListener("DOMContentLoaded", async () => {
               <i class="fas fa-eye"></i> Xem
             </button>
             ${request.status === 'PENDING' ? `
-              <button class="btn btn-sm btn-success" onclick="quickApprove(${request.id})">
+              <button class="btn btn-sm btn-success" onclick="quickApprove(${request.id})" title="Chấp nhận">
                 <i class="fas fa-check"></i>
               </button>
-              <button class="btn btn-sm btn-danger" onclick="quickReject(${request.id})">
+              <button class="btn btn-sm btn-danger" onclick="quickReject(${request.id})" title="Từ chối">
                 <i class="fas fa-times"></i>
+              </button>
+              <button class="btn btn-sm btn-warning" onclick="createContract(${request.id})" title="Lập hợp đồng">
+                <i class="fas fa-file-contract"></i> HĐ
+              </button>
+            ` : request.status === 'ACCEPTED' ? `
+              <button class="btn btn-sm btn-warning" onclick="createContract(${request.id})" title="Lập hợp đồng">
+                <i class="fas fa-file-contract"></i> HĐ
               </button>
             ` : ''}
           </div>
@@ -392,6 +418,12 @@ document.addEventListener("DOMContentLoaded", async () => {
   async function loadRequestsDetails() {
     for (const request of allRequests) {
       try {
+        // Kiểm tra xem request có tồn tại và có thuộc tính room không
+        if (!request || !request.room) {
+          console.warn('Invalid request object:', request);
+          continue;
+        }
+
         // Load room details
         const room = await api.getRoom(request.room);
         const roomElement = document.getElementById(`room-${request.id}`);
@@ -404,10 +436,16 @@ document.addEventListener("DOMContentLoaded", async () => {
           `;
         }
       } catch (error) {
-        console.error(`Error loading room ${request.room}:`, error);
+        console.error(`Error loading room ${request?.room}:`, error);
       }
 
       try {
+        // Kiểm tra xem request có tồn tại và có thuộc tính tenant không
+        if (!request || !request.tenant) {
+          console.warn('Invalid request object or missing tenant:', request);
+          continue;
+        }
+
         // Load tenant details
         const tenant = await api.getTenant(request.tenant);
         const tenantElement = document.getElementById(`request-tenant-${request.id}`);
@@ -420,7 +458,7 @@ document.addEventListener("DOMContentLoaded", async () => {
           `;
         }
       } catch (error) {
-        console.error(`Error loading tenant ${request.tenant}:`, error);
+        console.error(`Error loading tenant ${request?.tenant}:`, error);
       }
     }
   }
@@ -477,7 +515,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     
     const pending = requests.filter(r => r && r.status === 'PENDING').length;
     const approved = requests.filter(r => r && r.status === 'ACTIVE').length;
-    const rejected = requests.filter(r => r && r.status === 'ENDED').length;
+    const rejected = requests.filter(r => r && (r.status === 'ENDED' || r.status === 'REJECTED')).length;
 
     const pendingEl = document.getElementById('pendingCount');
     const approvedEl = document.getElementById('approvedCount');
@@ -596,9 +634,14 @@ document.addEventListener("DOMContentLoaded", async () => {
   function getStatusClass(status) {
     const statusMap = {
       'PENDING': 'pending',
-      'ACTIVE': 'approved',
-      'ENDED': 'rejected',
-      'SUSPENDED': 'suspended'
+      'ACCEPTED': 'approved',
+      'DECLINED': 'rejected',
+      'CANCELED': 'canceled',
+      'ACTIVE': 'approved', // for backward compatibility
+      'ENDED': 'rejected',  // for backward compatibility
+      'REJECTED': 'rejected',
+      'SUSPENDED': 'suspended',
+      'UNKNOWN': 'pending'
     };
     return statusMap[status] || 'pending';
   }
@@ -606,11 +649,16 @@ document.addEventListener("DOMContentLoaded", async () => {
   function getStatusText(status) {
     const statusMap = {
       'PENDING': 'Chờ xử lý',
-      'ACTIVE': 'Đã chấp nhận',
-      'ENDED': 'Đã từ chối',
-      'SUSPENDED': 'Tạm dừng'
+      'ACCEPTED': 'Đã chấp nhận',
+      'DECLINED': 'Đã từ chối',
+      'CANCELED': 'Đã hủy',
+      'ACTIVE': 'Đã chấp nhận', // for backward compatibility
+      'ENDED': 'Đã từ chối',     // for backward compatibility
+      'REJECTED': 'Đã từ chối',
+      'SUSPENDED': 'Tạm dừng',
+      'UNKNOWN': 'Không xác định'
     };
-    return statusMap[status] || status;
+    return statusMap[status] || 'Không xác định';
   }
 
   function showError(message) {
@@ -656,6 +704,57 @@ document.addEventListener("DOMContentLoaded", async () => {
       } else {
         displayTenants(allTenants);
       }
+    }
+  };
+
+  // Quick action functions
+  window.quickApprove = async function(requestId) {
+    try {
+      await api.acceptRentalRequest(requestId);
+      showToast('Đã chấp nhận yêu cầu xem nhà!', 'success');
+      await loadAllData();
+    } catch (error) {
+      console.error('Error accepting request:', error);
+      showToast('Lỗi khi chấp nhận yêu cầu: ' + error.message, 'error');
+    }
+  };
+
+  window.quickReject = async function(requestId) {
+    if (confirm('Bạn có chắc chắn muốn từ chối yêu cầu này?')) {
+      try {
+        await api.declineRentalRequest(requestId);
+        showToast('Đã từ chối yêu cầu xem nhà!', 'success');
+        await loadAllData();
+      } catch (error) {
+        console.error('Error declining request:', error);
+        showToast('Lỗi khi từ chối yêu cầu: ' + error.message, 'error');
+      }
+    }
+  };
+
+  window.createContract = async function(requestId) {
+    const request = allRequests.find(r => r.id === requestId);
+    if (!request) {
+      showToast('Không tìm thấy yêu cầu xem nhà', 'error');
+      return;
+    }
+
+    // Allow contract creation from both PENDING and ACCEPTED requests
+    if (request.status !== 'PENDING' && request.status !== 'ACCEPTED') {
+      showToast('Chỉ có thể tạo hợp đồng từ yêu cầu chờ xử lý hoặc đã được chấp nhận', 'error');
+      return;
+    }
+
+    try {
+      // Load room and tenant details for contract
+      const room = await api.getRoom(request.room);
+      const tenant = await api.getTenant(request.tenant);
+
+      // Show contract creation modal
+      showContractCreationModal(request, room, tenant);
+    } catch (error) {
+      console.error('Error loading details for contract creation:', error);
+      showToast('Lỗi khi tải thông tin: ' + error.message, 'error');
     }
   };
 
@@ -755,13 +854,20 @@ document.addEventListener("DOMContentLoaded", async () => {
       // Show/hide action buttons based on status
       const approveBtn = document.getElementById('approveBtn');
       const rejectBtn = document.getElementById('rejectBtn');
+      const contractBtn = document.getElementById('contractBtn');
       
       if (request.status === 'PENDING') {
-        approveBtn.style.display = 'inline-block';
-        rejectBtn.style.display = 'inline-block';
+        if (approveBtn) approveBtn.style.display = 'inline-block';
+        if (rejectBtn) rejectBtn.style.display = 'inline-block';
+        if (contractBtn) contractBtn.style.display = 'inline-block';
+      } else if (request.status === 'ACCEPTED') {
+        if (approveBtn) approveBtn.style.display = 'none';
+        if (rejectBtn) rejectBtn.style.display = 'none';
+        if (contractBtn) contractBtn.style.display = 'inline-block';
       } else {
-        approveBtn.style.display = 'none';
-        rejectBtn.style.display = 'none';
+        if (approveBtn) approveBtn.style.display = 'none';
+        if (rejectBtn) rejectBtn.style.display = 'none';
+        if (contractBtn) contractBtn.style.display = 'none';
       }
       
       document.getElementById('requestModal').style.display = 'block';
@@ -858,68 +964,17 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   };
 
-  window.quickApprove = function(requestId) {
-    if (confirm('Bạn có chắc chắn muốn chấp nhận yêu cầu này?')) {
-      approveRequestById(requestId);
-    }
-  };
-
-  window.quickReject = function(requestId) {
-    if (confirm('Bạn có chắc chắn muốn từ chối yêu cầu này?')) {
-      rejectRequestById(requestId);
-    }
-  };
-
   window.approveRequest = function() {
     if (currentRequestId) {
-      approveRequestById(currentRequestId);
+      quickApprove(currentRequestId);
     }
   };
 
   window.rejectRequest = function() {
     if (currentRequestId) {
-      rejectRequestById(currentRequestId);
+      quickReject(currentRequestId);
     }
   };
-
-  async function approveRequestById(requestId) {
-    try {
-      const today = new Date().toISOString().split('T')[0];
-      const endDate = new Date();
-      endDate.setFullYear(endDate.getFullYear() + 1);
-      const endDateStr = endDate.toISOString().split('T')[0];
-
-      await api.updateContract(requestId, {
-        status: 'ACTIVE',
-        start_date: today,
-        end_date: endDateStr
-      });
-
-      showError('Đã chấp nhận yêu cầu thuê thành công!');
-      closeModal();
-      await loadAllData();
-      
-    } catch (error) {
-      console.error('Error approving request:', error);
-      showError('Lỗi khi chấp nhận yêu cầu: ' + error.message);
-    }
-  }
-
-  async function rejectRequestById(requestId) {
-    try {
-      await api.updateContract(requestId, {
-        status: 'ENDED'
-      });
-
-      showError('Đã từ chối yêu cầu thuê.');
-      closeModal();
-      await loadAllData();
-      
-    } catch (error) {
-      console.error('Error rejecting request:', error);
-      showError('Lỗi khi từ chối yêu cầu: ' + error.message);
-    }
-  }
 
   window.closeModal = function() {
     document.getElementById('requestModal').style.display = 'none';
@@ -931,9 +986,328 @@ document.addEventListener("DOMContentLoaded", async () => {
     currentTenantId = null;
   };
 
-  window.viewTenantContract = function() {
-    // TODO: Navigate to contract management page
-    console.log('View tenant contract:', currentTenantId);
+  window.closeTenantContractModal = function() {
+    document.getElementById('tenantContractModal').style.display = 'none';
+  };
+
+  window.viewTenantContract = async function() {
+    if (!currentTenantId) {
+      showToast('Không tìm thấy thông tin người thuê', 'error');
+      return;
+    }
+
+    try {
+      // Find active contracts for this tenant
+      const tenantContracts = allContracts.filter(c => 
+        c.tenant === currentTenantId && c.status === 'ACTIVE'
+      );
+
+      if (tenantContracts.length === 0) {
+        showToast('Người thuê này chưa có hợp đồng nào đang hoạt động', 'warning');
+        return;
+      }
+
+      // Get the most recent active contract
+      const contract = tenantContracts.sort((a, b) => 
+        new Date(b.created_at) - new Date(a.created_at)
+      )[0];
+
+      // Load additional data
+      const [room, tenant] = await Promise.all([
+        api.getRoom(contract.room),
+        api.getTenant(contract.tenant)
+      ]);
+
+      showTenantContractDetailsModal(contract, room, tenant);
+    } catch (error) {
+      console.error('Error loading tenant contract:', error);
+      showToast('Có lỗi xảy ra khi tải hợp đồng', 'error');
+    }
+  };
+
+  function showTenantContractDetailsModal(contract, room, tenant) {
+    const modal = document.getElementById('tenantContractModal');
+    const content = document.getElementById('tenantContractDetailsContent');
+    
+    if (!modal || !content) {
+      console.error('Tenant contract modal elements not found');
+      showToast('Không tìm thấy modal element', 'error');
+      return;
+    }
+    
+    const startDate = new Date(contract.start_date).toLocaleDateString('vi-VN');
+    const endDate = new Date(contract.end_date).toLocaleDateString('vi-VN');
+    const createdDate = new Date(contract.created_at).toLocaleDateString('vi-VN');
+    
+    const statusInfo = getContractStatusInfo(contract.status);
+    
+    // Get tenant initials for avatar - safely handle missing data
+    const firstName = tenant.first_name || '';
+    const lastName = tenant.last_name || '';
+    const username = tenant.username || '';
+    
+    const tenantInitials = firstName && lastName 
+      ? `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase()
+      : username.charAt(0).toUpperCase();
+    
+    const tenantDisplayName = firstName && lastName 
+      ? `${firstName} ${lastName}` 
+      : (tenant.full_name || username);
+    
+    // Update modal title
+    const modalTitle = document.getElementById('tenantContractModalTitle');
+    if (modalTitle) {
+      modalTitle.innerHTML = `<i class="fas fa-file-contract"></i> Hợp đồng #${contract.id} - ${statusInfo.text} - ${startDate} đến ${endDate}`;
+    }
+    
+    content.innerHTML = `
+      <div class="contract-details">
+        <!-- Body Section -->
+        <div class="contract-view-body">
+          <div class="contract-grid">
+            <!-- Left Column -->
+            <div class="contract-left-col">
+              <!-- Financial Information -->
+              <div class="info-card">
+                <h3 class="card-title">
+                  <i class="fas fa-money-bill-wave"></i>
+                  Thông tin tài chính
+                </h3>
+                <div class="info-rows">
+                  <div class="info-row">
+                    <span class="label">Tiền thuê/tháng:</span>
+                    <span class="value money">${fmtVND(parseFloat(contract.monthly_rent || 0))}</span>
+                  </div>
+                  <div class="info-row">
+                    <span class="label">Tiền cọc:</span>
+                    <span class="value money">${fmtVND(parseFloat(contract.deposit || 0))}</span>
+                  </div>
+                  <div class="info-row">
+                    <span class="label">Chu kỳ thanh toán:</span>
+                    <span class="value">${contract.billing_cycle === 'MONTHLY' ? 'Hàng tháng' : contract.billing_cycle}</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Contract Information -->
+              <div class="info-card">
+                <h3 class="card-title">
+                  <i class="fas fa-file-contract"></i>
+                  Thông tin hợp đồng
+                </h3>
+                <div class="info-rows">
+                  <div class="info-row">
+                    <span class="label">Ngày ký:</span>
+                    <span class="value">${createdDate}</span>
+                  </div>
+                  <div class="info-row">
+                    <span class="label">Ngày bắt đầu:</span>
+                    <span class="value">${startDate}</span>
+                  </div>
+                  <div class="info-row">
+                    <span class="label">Ngày kết thúc:</span>
+                    <span class="value">${endDate}</span>
+                  </div>
+                </div>
+              </div>
+
+              ${contract.notes ? `
+                <div class="info-card">
+                  <h3 class="card-title">
+                    <i class="fas fa-sticky-note"></i>
+                    Ghi chú
+                  </h3>
+                  <div class="notes-content">
+                    ${contract.notes}
+                  </div>
+                </div>
+              ` : ''}
+            </div>
+
+            <!-- Right Column -->
+            <div class="contract-right-col">
+              <!-- Room Information -->
+              <div class="info-card room-card">
+                <h3 class="card-title">
+                  <i class="fas fa-home"></i>
+                  Thông tin phòng
+                </h3>
+                <div class="room-content">
+                  <div class="room-header-compact">
+                    ${room.image ? 
+                      `<div class="room-image-wrapper">
+                         <img src="${room.image}" alt="${room.name}" class="room-thumb">
+                       </div>` :
+                      `<div class="room-image-wrapper">
+                         <div class="room-thumb-placeholder">
+                           <i class="fas fa-image"></i>
+                         </div>
+                       </div>`
+                    }
+                    <div class="room-info-compact">
+                      <h4 class="room-name">${room.name || `Phòng #${contract.room}`}</h4>
+                      <p class="room-address">
+                        <i class="fas fa-map-marker-alt"></i>
+                        ${room.address || 'Chưa có địa chỉ'}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div class="room-details-compact">
+                    <div class="room-detail-item">
+                      <i class="fas fa-expand-arrows-alt"></i>
+                      <span>${room.area_m2 || 'N/A'} m²</span>
+                    </div>
+                    <div class="room-detail-item">
+                      <i class="fas fa-bed"></i>
+                      <span>${room.bedrooms || 1} phòng ngủ</span>
+                    </div>
+                    <div class="room-detail-item">
+                      <i class="fas fa-bath"></i>
+                      <span>${room.bathrooms || 1} phòng tắm</span>
+                    </div>
+                  </div>
+
+                  ${room.detail ? `
+                    <div class="room-description">
+                      <p>${room.detail}</p>
+                    </div>
+                  ` : ''}
+                </div>
+              </div>
+
+              <!-- Tenant Information -->
+              <div class="info-card tenant-card">
+                <h3 class="card-title">
+                  <i class="fas fa-user"></i>
+                  Thông tin người thuê
+                </h3>
+                <div class="tenant-content">
+                  <div class="tenant-profile">
+                    <div class="tenant-avatar-compact">
+                      ${tenantInitials}
+                    </div>
+                    <div class="tenant-info-compact">
+                      <h4 class="tenant-name">${tenantDisplayName}</h4>
+                      <div class="tenant-contacts">
+                        ${tenant.email ? `
+                          <div class="contact-item">
+                            <i class="fas fa-envelope"></i>
+                            <span>${tenant.email}</span>
+                          </div>
+                        ` : ''}
+                        ${tenant.phone ? `
+                          <div class="contact-item">
+                            <i class="fas fa-phone"></i>
+                            <span>${tenant.phone}</span>
+                          </div>
+                        ` : ''}
+                        ${tenant.address ? `
+                          <div class="contact-item">
+                            <i class="fas fa-map-marker-alt"></i>
+                            <span>${tenant.address}</span>
+                          </div>
+                        ` : ''}
+                        ${tenant.emergency_contact ? `
+                          <div class="contact-item">
+                            <i class="fas fa-phone-alt"></i>
+                            <span>${tenant.emergency_contact}</span>
+                          </div>
+                        ` : ''}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+    
+    // Show download button if contract image exists
+    const downloadBtn = document.getElementById('downloadTenantContractBtn');
+    if (contract.contract_image && downloadBtn) {
+      downloadBtn.style.display = 'inline-flex';
+      downloadBtn.innerHTML = '<i class="fas fa-download"></i> Tải ảnh hợp đồng';
+      downloadBtn.onclick = () => downloadContractImage(contract.contract_image, `hop-dong-${contract.id}`);
+    } else if (downloadBtn) {
+      downloadBtn.style.display = 'none';
+    }
+    
+    modal.style.display = 'block';
+  }
+
+  // Helper functions for tenant contract modal
+  window.openTenantImageLightbox = function(imageSrc) {
+    // Create lightbox if not exists
+    let lightbox = document.getElementById('tenantImageLightbox');
+    if (!lightbox) {
+      lightbox = document.createElement('div');
+      lightbox.id = 'tenantImageLightbox';
+      lightbox.className = 'image-lightbox';
+      lightbox.innerHTML = `
+        <div class="lightbox-content">
+          <span class="lightbox-close" onclick="closeTenantImageLightbox()">&times;</span>
+          <img class="lightbox-image" id="tenantLightboxImage" src="" alt="Contract Image">
+        </div>
+      `;
+      document.body.appendChild(lightbox);
+      
+      // Close on background click
+      lightbox.onclick = function(e) {
+        if (e.target === lightbox) {
+          closeTenantImageLightbox();
+        }
+      };
+    }
+    
+    document.getElementById('tenantLightboxImage').src = imageSrc;
+    lightbox.style.display = 'block';
+  };
+
+  window.closeTenantImageLightbox = function() {
+    const lightbox = document.getElementById('tenantImageLightbox');
+    if (lightbox) {
+      lightbox.style.display = 'none';
+    }
+  };
+
+  window.downloadTenantContract = function() {
+    // Implementation for downloading contract
+    showToast('Tính năng tải xuống sẽ được cập nhật sau', 'info');
+  };
+
+  window.editContract = function() {
+    // Implementation for editing contract
+    showToast('Tính năng chỉnh sửa hợp đồng sẽ được cập nhật sau', 'info');
+  };
+
+  window.uploadContractImage = function(contractId) {
+    // Implementation for uploading contract image
+    showToast('Tính năng tải lên hình ảnh sẽ được cập nhật sau', 'info');
+  };
+
+  window.downloadContractImage = function(imageUrl, filename) {
+    try {
+      // Create a temporary link for downloading
+      const link = document.createElement('a');
+      link.href = imageUrl;
+      link.download = filename + '.jpg';
+      link.target = '_blank';
+      link.style.display = 'none';
+      
+      // Add to DOM, click, then remove
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      // Show success message
+      showToast('Đang tải ảnh hợp đồng...', 'success');
+    } catch (error) {
+      console.error('Error downloading image:', error);
+      showToast('Lỗi khi tải ảnh: ' + error.message, 'error');
+    }
   };
 
   window.viewTenantInvoices = function() {
@@ -949,13 +1323,36 @@ document.addEventListener("DOMContentLoaded", async () => {
   function displayRequestsAsCards(requests) {
     const grid = document.getElementById('requests-grid');
     
-    if (!Array.isArray(requests) || requests.length === 0) {
-      grid.innerHTML = '<div class="loading-message"><i class="fas fa-inbox"></i><p>Chưa có yêu cầu nào.</p></div>';
+    // Kiểm tra đầu vào
+    if (!Array.isArray(requests)) {
+      console.warn('displayRequestsAsCards: requests is not an array:', requests);
+      grid.innerHTML = '<div class="loading-message error"><i class="fas fa-exclamation-circle"></i><p>Dữ liệu yêu cầu không đúng định dạng.</p></div>';
+      return;
+    }
+    
+    if (requests.length === 0) {
+      grid.innerHTML = '<div class="loading-message empty"><i class="fas fa-inbox"></i><p>Chưa có yêu cầu xem nhà nào.</p></div>';
       return;
     }
 
-    const cards = requests.map(request => createRequestCard(request)).join('');
-    grid.innerHTML = cards;
+    try {
+      const cards = requests.map(request => {
+        if (!request || typeof request !== 'object') {
+          console.warn('Invalid request object:', request);
+          return '';
+        }
+        return createRequestCard(request);
+      }).filter(card => card.trim() !== '');
+      
+      if (cards.length === 0) {
+        grid.innerHTML = '<div class="loading-message empty"><i class="fas fa-inbox"></i><p>Không có yêu cầu hợp lệ để hiển thị.</p></div>';
+      } else {
+        grid.innerHTML = cards.join('');
+      }
+    } catch (error) {
+      console.error('Error displaying request cards:', error);
+      grid.innerHTML = `<div class="loading-message error"><i class="fas fa-exclamation-triangle"></i><p>Lỗi hiển thị dữ liệu: ${error.message}</p></div>`;
+    }
   }
 
   function displayTenantsAsCards(tenants) {
@@ -971,8 +1368,16 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   function createRequestCard(request) {
-    const statusInfo = getStatusInfo(request.status);
-    const createdAt = formatDate(request.created_at);
+    // Validate request object
+    if (!request || !request.id) {
+      console.warn('Invalid request object in createRequestCard:', request);
+      return '';
+    }
+
+    // Try to safely extract data with default values
+    const statusInfo = getStatusInfo(request.status || 'UNKNOWN');
+    const createdAt = formatDate(request.created_at || new Date());
+    const viewingTime = formatDate(request.viewing_time || request.created_at || new Date());
     
     return `
       <div class="request-card" onclick="viewRequest(${request.id})">
@@ -995,7 +1400,11 @@ document.addEventListener("DOMContentLoaded", async () => {
           </div>
           <div class="info-row">
             <i class="info-icon fas fa-calendar"></i>
-            <span class="info-text">${createdAt}</span>
+            <span class="info-text">Yêu cầu: ${createdAt}</span>
+          </div>
+          <div class="info-row">
+            <i class="info-icon fas fa-clock"></i>
+            <span class="info-text">Hẹn xem: ${viewingTime}</span>
           </div>
           ${request.notes ? `
             <div class="info-row">
@@ -1012,6 +1421,16 @@ document.addEventListener("DOMContentLoaded", async () => {
             </button>
             <button class="btn btn-sm btn-danger" onclick="event.stopPropagation(); quickReject(${request.id})">
               <i class="fas fa-times"></i> Từ chối
+            </button>
+            <button class="btn btn-sm btn-warning" onclick="event.stopPropagation(); createContract(${request.id})">
+              <i class="fas fa-file-contract"></i> Lập hợp đồng
+            </button>
+          ` : request.status === 'ACCEPTED' ? `
+            <button class="btn btn-sm btn-warning" onclick="event.stopPropagation(); createContract(${request.id})">
+              <i class="fas fa-file-contract"></i> Lập hợp đồng
+            </button>
+            <button class="btn btn-sm btn-primary" onclick="event.stopPropagation(); viewRequest(${request.id})">
+              <i class="fas fa-eye"></i> Xem chi tiết
             </button>
           ` : `
             <button class="btn btn-sm btn-primary" onclick="event.stopPropagation(); viewRequest(${request.id})">
@@ -1082,10 +1501,22 @@ document.addEventListener("DOMContentLoaded", async () => {
     switch(status) {
       case 'PENDING':
         return { class: 'pending', text: 'Chờ xử lý' };
-      case 'ACTIVE':
+      case 'ACCEPTED':
         return { class: 'active', text: 'Đã chấp nhận' };
-      case 'ENDED':
+      case 'DECLINED':
         return { class: 'ended', text: 'Đã từ chối' };
+      case 'CANCELED':
+        return { class: 'canceled', text: 'Đã hủy' };
+      case 'ACTIVE': // backward compatibility
+        return { class: 'active', text: 'Đã chấp nhận' };
+      case 'ENDED': // backward compatibility
+        return { class: 'ended', text: 'Đã từ chối' };
+      case 'REJECTED':
+        return { class: 'ended', text: 'Đã từ chối' };
+      case 'SUSPENDED':
+        return { class: 'suspended', text: 'Tạm dừng' };
+      case 'UNKNOWN':
+        return { class: 'pending', text: 'Không xác định' };
       default:
         return { class: 'pending', text: 'Không xác định' };
     }
@@ -1113,16 +1544,267 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
   }
 
+  // Show/hide loading states
+  function showLoading(show, message = 'Đang tải...') {
+    // Implementation depends on your loading component
+    console.log(show ? message : 'Loading complete');
+  }
+
+  // Toast notification system
+  function showToast(message, type = 'info') {
+    // Create toast notification
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    toast.style.cssText = `
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: ${type === 'success' ? '#d4edda' : type === 'error' ? '#f8d7da' : '#d1ecf1'};
+      color: ${type === 'success' ? '#155724' : type === 'error' ? '#721c24' : '#0c5460'};
+      padding: 12px 20px;
+      border: 1px solid ${type === 'success' ? '#c3e6cb' : type === 'error' ? '#f5c6cb' : '#bee5eb'};
+      border-radius: 4px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      z-index: 9999;
+      max-width: 400px;
+      animation: slideIn 0.3s ease;
+    `;
+    
+    toast.innerHTML = `
+      <div style="display: flex; align-items: center; justify-content: space-between;">
+        <span><i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'}"></i> ${message}</span>
+        <button onclick="this.parentElement.parentElement.remove()" style="background: none; border: none; font-size: 18px; cursor: pointer; margin-left: 10px;">&times;</button>
+      </div>
+    `;
+    
+    document.body.appendChild(toast);
+    
+    // Auto remove after 5 seconds
+    setTimeout(() => {
+      if (toast.parentElement) {
+        toast.remove();
+      }
+    }, 5000);
+  }
+
+  // Contract creation modal
+  function showContractCreationModal(request, room, tenant) {
+    // Create modal if it doesn't exist
+    let modal = document.getElementById('contractModal');
+    if (!modal) {
+      modal = document.createElement('div');
+      modal.id = 'contractModal';
+      modal.className = 'modal';
+      document.body.appendChild(modal);
+    }
+
+    // Set default dates
+    const today = new Date().toISOString().split('T')[0];
+    const nextYear = new Date();
+    nextYear.setFullYear(nextYear.getFullYear() + 1);
+    const nextYearStr = nextYear.toISOString().split('T')[0];
+
+    modal.innerHTML = `
+      <div class="modal-content contract-modal">
+        <div class="modal-header">
+          <h3><i class="fas fa-file-contract"></i> Tạo hợp đồng thuê nhà</h3>
+          <button class="close-btn" onclick="closeContractModal()">&times;</button>
+        </div>
+        
+        <div class="modal-body">
+          <div class="contract-info-summary">
+            <h4>Thông tin tóm tắt</h4>
+            <div class="info-grid">
+              <div class="info-item">
+                <label>Phòng:</label>
+                <span>${room.name}</span>
+              </div>
+              <div class="info-item">
+                <label>Người thuê:</label>
+                <span>${tenant.full_name || tenant.username}</span>
+              </div>
+              <div class="info-item">
+                <label>Giá phòng:</label>
+                <span>${fmtVND(parseFloat(room.base_price || 0))}/tháng</span>
+              </div>
+              <div class="info-item">
+                <label>Thời gian xem nhà:</label>
+                <span>${new Date(request.viewing_time).toLocaleString('vi-VN')}</span>
+              </div>
+              <div class="info-item">
+                <label>Trạng thái yêu cầu:</label>
+                <span class="status-badge status-${getStatusClass(request.status)}">${getStatusText(request.status)}</span>
+              </div>
+            </div>
+            ${request.status === 'PENDING' ? `
+              <div class="alert alert-info" style="margin-top: 1rem; padding: 0.75rem; background: #e3f2fd; border: 1px solid #bbdefb; border-radius: 4px; color: #1565c0;">
+                <i class="fas fa-info-circle"></i> <strong>Lưu ý:</strong> Yêu cầu này chưa được chấp nhận. Hệ thống sẽ tự động chấp nhận yêu cầu khi bạn tạo hợp đồng.
+              </div>
+            ` : ''}
+          </div>
+
+          <form id="contractForm">
+            <div class="form-row">
+              <div class="form-group">
+                <label for="contract-start-date">Ngày bắt đầu hợp đồng <span class="required">*</span></label>
+                <input type="date" id="contract-start-date" name="start_date" value="${today}" required>
+              </div>
+              <div class="form-group">
+                <label for="contract-end-date">Ngày kết thúc hợp đồng <span class="required">*</span></label>
+                <input type="date" id="contract-end-date" name="end_date" value="${nextYearStr}" required>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="contract-monthly-rent">Tiền thuê hàng tháng <span class="required">*</span></label>
+                <input type="number" id="contract-monthly-rent" name="monthly_rent" value="${room.base_price || 0}" step="1000" required>
+              </div>
+              <div class="form-group">
+                <label for="contract-deposit">Tiền đặt cọc</label>
+                <input type="number" id="contract-deposit" name="deposit" value="${(room.base_price || 0) * 2}" step="1000">
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="contract-billing-cycle">Chu kỳ thanh toán</label>
+              <select id="contract-billing-cycle" name="billing_cycle">
+                <option value="MONTHLY">Hàng tháng</option>
+                <option value="QUARTERLY">Hàng quý</option>
+                <option value="YEARLY">Hàng năm</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="contract-notes">Ghi chú hợp đồng</label>
+              <textarea id="contract-notes" name="notes" rows="4" placeholder="Các điều khoản, quy định đặc biệt..."></textarea>
+            </div>
+
+            <div class="form-group">
+              <label for="contract-image">Ảnh hợp đồng đã ký</label>
+              <input type="file" id="contract-image" name="contract_image" accept="image/*">
+              <small class="form-help">Tải lên ảnh hợp đồng đã ký (nếu có). Hỗ trợ: JPG, PNG, GIF</small>
+            </div>
+
+            <input type="hidden" name="rental_request_id" value="${request.id}">
+            <input type="hidden" name="room" value="${request.room}">
+            <input type="hidden" name="tenant" value="${request.tenant}">
+          </form>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeContractModal()">Hủy</button>
+          <button type="button" class="btn btn-primary" onclick="submitContract()">
+            <i class="fas fa-save"></i> ${request.status === 'PENDING' ? 'Chấp nhận và tạo hợp đồng' : 'Tạo hợp đồng'}
+          </button>
+        </div>
+      </div>
+    `;
+
+    modal.style.display = 'block';
+  }
+
+  window.closeContractModal = function() {
+    const modal = document.getElementById('contractModal');
+    if (modal) {
+      modal.style.display = 'none';
+    }
+  };
+
+  window.submitContract = async function() {
+    const form = document.getElementById('contractForm');
+    const formData = new FormData(form);
+    
+    // Check if we have an image file
+    const imageFile = formData.get('contract_image');
+    const hasImage = imageFile && imageFile.size > 0;
+    
+    // Validate that we have a rental_request_id
+    const requestId = parseInt(formData.get('rental_request_id'));
+    const request = allRequests.find(r => r.id === requestId);
+    
+    if (!request) {
+      showToast('Không tìm thấy yêu cầu xem nhà', 'error');
+      return;
+    }
+
+    // Check if request status allows contract creation
+    if (request.status !== 'ACCEPTED' && request.status !== 'PENDING') {
+      showToast('Chỉ có thể tạo hợp đồng từ yêu cầu đã được chấp nhận', 'error');
+      return;
+    }
+
+    try {
+      showLoading(true, 'Đang tạo hợp đồng...');
+      
+      // If request is still PENDING, accept it first
+      if (request.status === 'PENDING') {
+        await api.acceptRentalRequest(requestId);
+        showToast('Đã chấp nhận yêu cầu xem nhà', 'info');
+      }
+      
+      // Use appropriate API method based on whether we have file upload
+      if (hasImage) {
+        // Use FormData for file upload
+        await api.createContractWithFile(formData);
+      } else {
+        // Convert FormData to object for JSON API
+        const contractData = {};
+        for (let [key, value] of formData.entries()) {
+          if (key === 'rental_request_id' || key === 'room' || key === 'tenant') {
+            contractData[key] = parseInt(value);
+          } else if (key === 'monthly_rent' || key === 'deposit') {
+            contractData[key] = parseFloat(value) || 0;
+          } else if (key !== 'contract_image') { // Skip empty file input
+            contractData[key] = value;
+          }
+        }
+        await api.createContract(contractData);
+      }
+      
+      closeContractModal();
+      showToast('Tạo hợp đồng thành công!', 'success');
+      await loadAllData();
+      
+    } catch (error) {
+      console.error('Error creating contract:', error);
+      showToast('Lỗi khi tạo hợp đồng: ' + error.message, 'error');
+    } finally {
+      showLoading(false);
+    }
+  };
+
+  function getContractStatusInfo(status) {
+    switch(status) {
+      case 'ACTIVE':
+        return { class: 'active', text: 'Đang hiệu lực' };
+      case 'ENDED':
+        return { class: 'ended', text: 'Đã kết thúc' };
+      case 'SUSPENDED':
+        return { class: 'suspended', text: 'Tạm dừng' };
+      default:
+        return { class: 'pending', text: 'Không xác định' };
+    }
+  }
+
   // Close modals when clicking outside
   window.onclick = function(event) {
     const requestModal = document.getElementById('requestModal');
     const tenantModal = document.getElementById('tenantModal');
+    const contractModal = document.getElementById('contractModal');
+    const tenantContractModal = document.getElementById('tenantContractModal');
     
     if (event.target === requestModal) {
       closeModal();
     }
     if (event.target === tenantModal) {
       closeTenantModal();
+    }
+    if (event.target === contractModal) {
+      closeContractModal();
+    }
+    if (event.target === tenantContractModal) {
+      closeTenantContractModal();
     }
   };
 });

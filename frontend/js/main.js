@@ -106,72 +106,7 @@ function logout() {
   }
 }
 
-function showNotif(msg, type = "info") {
-  // Create a modern toast notification
-  const toast = document.createElement('div');
-  toast.className = `toast toast-${type}`;
-  toast.style.cssText = `
-    position: fixed;
-    top: 2rem;
-    right: 2rem;
-    z-index: 1000;
-    padding: 1rem 1.5rem;
-    border-radius: var(--radius-md);
-    background: var(--card-bg);
-    border: 1px solid var(--border);
-    box-shadow: var(--shadow-lg);
-    max-width: 400px;
-    opacity: 0;
-    transform: translateX(100%);
-    transition: all var(--transition-normal);
-  `;
-  
-  // Set color based on type
-  let iconClass = 'fas fa-info-circle';
-  let colorStyle = 'color: var(--info);';
-  
-  switch(type) {
-    case 'success':
-      iconClass = 'fas fa-check-circle';
-      colorStyle = 'color: var(--success);';
-      break;
-    case 'error':
-      iconClass = 'fas fa-exclamation-circle';
-      colorStyle = 'color: var(--danger);';
-      break;
-    case 'warning':
-      iconClass = 'fas fa-exclamation-triangle';
-      colorStyle = 'color: var(--warning);';
-      break;
-  }
-  
-  toast.innerHTML = `
-    <div style="display: flex; align-items: center; gap: 0.75rem;">
-      <i class="${iconClass}" style="font-size: 1.25rem; ${colorStyle}"></i>
-      <span style="color: var(--text-primary); font-weight: 500;">${msg}</span>
-      <button onclick="this.closest('.toast').remove()" style="background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 0; margin-left: auto;">
-        <i class="fas fa-times"></i>
-      </button>
-    </div>
-  `;
-  
-  document.body.appendChild(toast);
-  
-  // Animate in
-  setTimeout(() => {
-    toast.style.opacity = '1';
-    toast.style.transform = 'translateX(0)';
-  }, 100);
-  
-  // Auto remove after 5 seconds
-  setTimeout(() => {
-    if (toast.parentNode) {
-      toast.style.opacity = '0';
-      toast.style.transform = 'translateX(100%)';
-      setTimeout(() => toast.remove(), 300);
-    }
-  }, 5000);
-}
+// Notification toasts removed
 
 // Initialize navbar on page load
 document.addEventListener("DOMContentLoaded", () => {

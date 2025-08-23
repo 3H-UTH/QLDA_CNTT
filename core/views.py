@@ -4,12 +4,12 @@ from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated 
 from rest_framework.views import APIView
 from django_filters.rest_framework import DjangoFilterBackend
-from .models import Room, Contract, MeterReading, Invoice, Payment
+from .models import Room, Contract, MeterReading, Invoice, Payment, RentalRequest
 from django.contrib.auth import get_user_model
 from .serializers import (
     RoomSerializer, ContractSerializer, ContractCreateSerializer, 
     MeterReadingSerializer, InvoiceSerializer, InvoiceGenerateSerializer,
-    TenantSerializer, PaymentSerializer
+    TenantSerializer, PaymentSerializer, RentalRequestSerializer, RentalRequestCreateSerializer
 )
 from drf_spectacular.utils import extend_schema_view, extend_schema, OpenApiParameter
 from .permissions import IsOwnerRole, TenantSelfManagePermission, ContractPermission
@@ -39,6 +39,112 @@ class RoomViewSet(viewsets.ModelViewSet):
     search_fields = ["name"]                          
     ordering_fields = ["id", "area_m2", "base_price", "name"]  
 
+# ---------- RENTAL REQUESTS ----------
+@extend_schema_view(
+    list=extend_schema(tags=["Rental Requests"]),
+    retrieve=extend_schema(tags=["Rental Requests"]),
+    create=extend_schema(tags=["Rental Requests"]),
+    update=extend_schema(tags=["Rental Requests"]),
+    partial_update=extend_schema(tags=["Rental Requests"]),
+    destroy=extend_schema(tags=["Rental Requests"]),
+)
+class RentalRequestViewSet(viewsets.ModelViewSet):
+    queryset = RentalRequest.objects.select_related("room", "tenant").order_by("-created_at")
+    permission_classes = [IsAuthenticated]  # Cần chi tiết hơn để phân quyền đúng
+    
+    filter_backends = [DjangoFilterBackend, filters.OrderingFilter, filters.SearchFilter]
+    filterset_fields = ["status", "room", "tenant"]
+    search_fields = ["room__name", "tenant__full_name", "tenant__email", "notes"]
+    ordering_fields = ["created_at", "viewing_time", "id"]
+    
+    def get_serializer_class(self):
+        if self.action == "create":
+            return RentalRequestCreateSerializer
+        return RentalRequestSerializer
+    
+    def get_queryset(self):
+        """Filter requests based on user role"""
+        queryset = super().get_queryset()
+        user = self.request.user
+        
+        if not user.is_authenticated:
+            return queryset.none()
+            
+        # OWNER can see all requests
+        if getattr(user, 'role', None) == 'OWNER':
+            return queryset
+            
+        # TENANT can only see their own requests
+        if getattr(user, 'role', None) == 'TENANT':
+            return queryset.filter(tenant=user)
+            
+        return queryset.none()
+    
+    def perform_create(self, serializer):
+        """Set tenant to current user for tenant requests"""
+        serializer.save(tenant=self.request.user)
+    
+    @extend_schema(tags=["Rental Requests"])
+    @action(detail=True, methods=["post"], url_path="accept")
+    def accept_request(self, request, pk=None):
+        """Chấp nhận yêu cầu xem nhà"""
+        rental_request = self.get_object()
+        
+        # Chỉ chủ nhà mới có thể chấp nhận yêu cầu
+        if getattr(request.user, 'role', None) != 'OWNER':
+            return Response({"detail": "Bạn không có quyền thực hiện hành động này"}, status=status.HTTP_403_FORBIDDEN)
+        
+        # Chỉ chấp nhận yêu cầu đang ở trạng thái PENDING
+        if rental_request.status != RentalRequest.PENDING:
+            return Response({"detail": "Chỉ có thể chấp nhận yêu cầu đang ở trạng thái chờ xử lý"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Cập nhật trạng thái thành ACCEPTED
+        rental_request.status = RentalRequest.ACCEPTED
+        rental_request.save(update_fields=["status", "updated_at"])
+        
+        return Response({"detail": "Yêu cầu xem nhà đã được chấp nhận"}, status=status.HTTP_200_OK)
+    
+    @extend_schema(tags=["Rental Requests"])
+    @action(detail=True, methods=["post"], url_path="decline")
+    def decline_request(self, request, pk=None):
+        """Từ chối yêu cầu xem nhà"""
+        rental_request = self.get_object()
+        
+        # Chỉ chủ nhà mới có thể từ chối yêu cầu
+        if getattr(request.user, 'role', None) != 'OWNER':
+            return Response({"detail": "Bạn không có quyền thực hiện hành động này"}, status=status.HTTP_403_FORBIDDEN)
+        
+        # Chỉ từ chối yêu cầu đang ở trạng thái PENDING
+        if rental_request.status != RentalRequest.PENDING:
+            return Response({"detail": "Chỉ có thể từ chối yêu cầu đang ở trạng thái chờ xử lý"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Cập nhật trạng thái thành DECLINED
+        rental_request.status = RentalRequest.DECLINED
+        rental_request.save(update_fields=["status", "updated_at"])
+        
+        return Response({"detail": "Yêu cầu xem nhà đã bị từ chối"}, status=status.HTTP_200_OK)
+    
+    @extend_schema(tags=["Rental Requests"])
+    @action(detail=True, methods=["post"], url_path="cancel")
+    def cancel_request(self, request, pk=None):
+        """Hủy yêu cầu xem nhà (chỉ tenant mới thực hiện được)"""
+        rental_request = self.get_object()
+        
+        # Kiểm tra quyền - chỉ tenant tạo yêu cầu mới được hủy
+        if request.user != rental_request.tenant:
+            return Response({"detail": "Bạn không có quyền hủy yêu cầu này"}, status=status.HTTP_403_FORBIDDEN)
+        
+        # Chỉ hủy yêu cầu đang ở trạng thái PENDING
+        if rental_request.status != RentalRequest.PENDING:
+            return Response({"detail": "Chỉ có thể hủy yêu cầu đang ở trạng thái chờ xử lý"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Cập nhật trạng thái thành CANCELED
+        rental_request.status = RentalRequest.CANCELED
+        rental_request.save(update_fields=["status", "updated_at"])
+        
+        return Response({"detail": "Yêu cầu xem nhà đã được hủy"}, status=status.HTTP_200_OK)
+
+
 # ---------- CONTRACTS ----------
 @extend_schema_view(
     list=extend_schema(tags=["Contracts"]),
@@ -49,14 +155,14 @@ class RoomViewSet(viewsets.ModelViewSet):
     destroy=extend_schema(tags=["Contracts"]),
 )
 class ContractViewSet(viewsets.ModelViewSet):
-    queryset = Contract.objects.select_related("room","tenant").order_by("-id")
+    queryset = Contract.objects.select_related("room", "tenant", "rental_request").order_by("-created_at")
     permission_classes = [ContractPermission]
 
-    # ✅ filter backends + fields ở CẤP CLASS
+    # Filter backends + fields
     filter_backends = [DjangoFilterBackend, filters.OrderingFilter, filters.SearchFilter]
     filterset_fields = ["status", "room", "tenant", "billing_cycle"]  # ?status=ACTIVE&room=3
     search_fields = ["room__name", "tenant__full_name", "tenant__email"]
-    ordering_fields = ["start_date", "end_date", "deposit", "id"]
+    ordering_fields = ["start_date", "end_date", "deposit", "created_at", "id"]
 
     def get_queryset(self):
         """Filter contracts based on user role"""
@@ -80,12 +186,12 @@ class ContractViewSet(viewsets.ModelViewSet):
         return ContractCreateSerializer if self.action == "create" else ContractSerializer
 
     def perform_create(self, serializer):
-        """Set tenant to current user for tenant requests"""
-        user = self.request.user
-        if getattr(user, 'role', None) == 'TENANT':
-            serializer.save(tenant=user)
-        else:
-            serializer.save()
+        """Create contract with appropriate data"""
+        # Chỉ có OWNER mới được tạo hợp đồng chính thức
+        if getattr(self.request.user, 'role', None) != 'OWNER':
+            return Response({"detail": "Chỉ chủ nhà mới có quyền tạo hợp đồng"}, status=status.HTTP_403_FORBIDDEN)
+        
+        serializer.save()
 
     @extend_schema(tags=["Contracts"])
     @action(detail=True, methods=["post"], url_path="end")
