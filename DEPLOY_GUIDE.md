@@ -37,7 +37,7 @@ git push origin main
 
 ### Build & Deploy Settings:
 - **Environment**: Python 3
-- **Build Command**: `./build.sh`
+- **Build Command**: `bash build.sh` hoặc `chmod +x build.sh && ./build.sh`
 - **Start Command**: `gunicorn rental.wsgi:application --bind 0.0.0.0:$PORT`
 
 ### Environment Variables:
@@ -112,10 +112,14 @@ const API_BASE_URL = 'https://your-app.onrender.com/api';
 
 ### Lỗi phổ biến:
 
-1. **Build failed**: Kiểm tra `requirements.txt` và `build.sh`
-2. **Database connection**: Kiểm tra `DATABASE_URL`
-3. **Static files**: Đảm bảo `whitenoise` được cấu hình đúng
-4. **CORS errors**: Kiểm tra `CORS_ALLOWED_ORIGINS`
+1. **Build failed - "build.sh: command not found"**: 
+   - Đổi Build Command thành: `bash build.sh`
+   - Hoặc: `chmod +x build.sh && ./build.sh`
+
+2. **Build failed**: Kiểm tra `requirements.txt` và `build.sh`
+3. **Database connection**: Kiểm tra `DATABASE_URL`
+4. **Static files**: Đảm bảo `whitenoise` được cấu hình đúng
+5. **CORS errors**: Kiểm tra `CORS_ALLOWED_ORIGINS`
 
 ### Debug commands:
 ```bash
