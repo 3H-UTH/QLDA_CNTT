@@ -67,6 +67,11 @@ async function loadRooms() {
         
         console.log('Loading rooms from API...');
         
+        // Check if API is available
+        if (typeof api === 'undefined') {
+            throw new Error('API client is not initialized. Please check if api.js is loaded properly.');
+        }
+        
         // Use the new API client instead of direct fetch
         const data = await api.getRooms();
         console.log('Rooms loaded successfully:', data);
@@ -88,7 +93,7 @@ function renderRoomsTable() {
     if (rooms.length === 0) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="7" class="text-center text-muted">
+                <td colspan="8" class="text-center text-muted">
                     Chưa có phòng nào. <a href="#" onclick="showAddRoomModal()">Thêm phòng đầu tiên</a>
                 </td>
             </tr>
@@ -97,8 +102,21 @@ function renderRoomsTable() {
     }
     
     rooms.forEach(room => {
+        // Determine image to display
+        let imageUrl = null;
+        if (room.image) {
+            imageUrl = room.image;
+        } else if (room.images && room.images.length > 0) {
+            imageUrl = room.images[0];
+        }
+        
+        const imageCell = imageUrl ? 
+            `<img src="${imageUrl}" alt="${room.name}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px;">` :
+            `<div style="width: 50px; height: 50px; background: #f0f0f0; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 12px; color: #666;">No Image</div>`;
+        
         const row = document.createElement('tr');
         row.innerHTML = `
+            <td style="text-align: center;">${imageCell}</td>
             <td>${room.name || ''}</td>
             <td>${room.area_m2 ? room.area_m2 + ' m²' : '-'}</td>
             <td>${room.bedrooms || 1}</td>
@@ -236,6 +254,11 @@ async function handleRoomSubmit(event) {
     try {
         showLoading(true, currentEditingRoom ? 'Đang cập nhật phòng...' : 'Đang tạo phòng mới...');
         
+        // Check if API is available
+        if (typeof api === 'undefined') {
+            throw new Error('API client is not initialized. Please check if api.js is loaded properly.');
+        }
+        
         // Prepare room data
         const roomData = {
             name: document.getElementById('room-name').value.trim(),
@@ -257,49 +280,39 @@ async function handleRoomSubmit(event) {
             roomData.area_m2 = area;
         }
         
-        let result;
-        
-        // If there are image files, use FormData
+        // Convert all images to base64 and add to roomData
         if (imageFiles && imageFiles.length > 0) {
-            const formData = new FormData();
-            
-            // Add all room data to FormData
-            Object.keys(roomData).forEach(key => {
-                formData.append(key, roomData[key]);
-            });
-            
-            // Add first image as main image
-            formData.append('image', imageFiles[0]);
-            
-            // Convert additional images to base64 and store as JSON string
-            if (imageFiles.length > 1) {
-                const additionalImages = [];
-                for (let i = 1; i < imageFiles.length; i++) {
-                    const base64 = await convertFileToBase64(imageFiles[i]);
-                    additionalImages.push(base64);
-                }
-                formData.append('additional_images', JSON.stringify(additionalImages));
+            console.log(`Converting ${imageFiles.length} images to base64...`);
+            const base64Images = [];
+            for (let i = 0; i < imageFiles.length; i++) {
+                const base64 = await convertFileToBase64(imageFiles[i]);
+                base64Images.push(base64);
+                console.log(`Converted image ${i + 1}/${imageFiles.length} to base64`);
             }
             
-            if (currentEditingRoom) {
-                result = await api.updateRoomWithFile(currentEditingRoom.id, formData);
-            } else {
-                result = await api.createRoomWithFile(formData);
-            }
-        } else {
-            // No images, use regular JSON API
-            if (currentEditingRoom) {
-                result = await api.updateRoom(currentEditingRoom.id, roomData);
-            } else {
-                result = await api.createRoom(roomData);
-            }
+            // Set the first image as main image (for 'image' column)
+            roomData.image = base64Images[0];
+            console.log('Set first image as main image for backend image column');
+            
+            // Set all images (for 'images' column as array string)
+            roomData.images = base64Images;
+            console.log('All images set as array string for images column');
         }
         
-        // Determine if this was an update or create operation based on API call
-        const isUpdate = result && result.id && currentEditingRoom && currentEditingRoom.id;
+        let result;
+        
+        // Always use JSON API with base64 images - no more FormData
+        if (currentEditingRoom) {
+            console.log('Updating room with base64 images...');
+            result = await api.updateRoom(currentEditingRoom.id, roomData);
+        } else {
+            console.log('Creating room with base64 images...');
+            result = await api.createRoom(roomData);
+        }
+        
         hideRoomModal();
         await loadRooms();
-        showSuccess(isUpdate ? 'Cập nhật phòng thành công!' : 'Thêm phòng thành công!');
+        showSuccess(currentEditingRoom ? 'Cập nhật phòng thành công!' : 'Thêm phòng thành công!');
         
     } catch (error) {
         console.error('Error saving room:', error);
@@ -323,6 +336,11 @@ async function handleDeleteRoom() {
     if (!currentEditingRoom) return;
     
     try {
+        // Check if API is available
+        if (typeof api === 'undefined') {
+            throw new Error('API client is not initialized. Please check if api.js is loaded properly.');
+        }
+        
         await api.deleteRoom(currentEditingRoom.id);
         
         hideDeleteModal();
@@ -517,49 +535,4 @@ function handleImagesPreview(event) {
 // Handle image preview (existing function, keep for compatibility)
 function handleImagePreview(event) {
     previewImage(event.target);
-}
-
-// Upload multiple images
-async function uploadImages(files) {
-    if (!files || files.length === 0) return [];
-    
-    const uploadPromises = Array.from(files).map(async (file) => {
-        try {
-            const base64 = await new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onload = () => resolve(reader.result);
-                reader.onerror = reject;
-                reader.readAsDataURL(file);
-            });
-            return base64;
-        } catch (error) {
-            console.error('Error processing image:', error);
-            return null;
-        }
-    });
-    
-    const results = await Promise.all(uploadPromises);
-    return results.filter(result => result !== null);
-}
-
-// Upload image file (simplified - store as base64 for now)
-async function uploadImage(file) {
-    if (!file) return null;
-    
-    try {
-        // Convert to base64
-        const base64 = await new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = () => resolve(reader.result);
-            reader.onerror = reject;
-            reader.readAsDataURL(file);
-        });
-        
-        // For now, just return the base64 data
-        // In production, you'd want to upload to server
-        return base64;
-    } catch (error) {
-        console.error('Image processing failed:', error);
-        return null;
-    }
 }

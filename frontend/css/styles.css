@@ -1083,6 +1083,10 @@ button:focus,
   background: var(--success);
 }
 
+.stat-icon.success {
+  background: var(--primary);
+}
+
 .stat-icon.rejected {
   background: var(--danger);
 }
@@ -1712,18 +1716,6 @@ button:focus,
   background: rgba(107, 114, 128, 0.1);
   color: #6b7280;
   border: 1px solid rgba(107, 114, 128, 0.2);
-}
-
-.status-contract-active {
-  background: rgba(79, 70, 229, 0.1);
-  color: #4f46e5;
-  border: 1px solid rgba(79, 70, 229, 0.2);
-}
-
-.badge.contract-active {
-  background: #e0e7ff;
-  color: #4338ca;
-  border: 1px solid #a5b4fc;
 }
 
 .card-content {
