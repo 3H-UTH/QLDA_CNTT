@@ -553,6 +553,32 @@ document.addEventListener("DOMContentLoaded", async () => {
                 </div>
               </div>
             ` : ''}
+
+            <!-- Contract Image Section -->
+            ${contract.contract_image_base64 ? `
+              <div class="info-card">
+                <h3 class="card-title">
+                  <i class="fas fa-file-image"></i>
+                  Ảnh hợp đồng đã ký
+                </h3>
+                <div class="contract-image-content">
+                  <div class="contract-image-wrapper">
+                    <img src="${contract.contract_image_base64}" 
+                         alt="Ảnh hợp đồng" 
+                         class="contract-image-preview"
+                         onclick="openImageLightbox('${contract.contract_image_base64}')"
+                         style="cursor: pointer; max-width: 100%; height: auto; border: 1px solid #ddd; border-radius: 4px;">
+                  </div>
+                  <div class="contract-image-actions" style="margin-top: 10px;">
+                    <button type="button" 
+                            class="btn btn-primary btn-sm" 
+                            onclick="downloadContractImage('${contract.contract_image_base64}', 'hop-dong-${contract.id}')">
+                      <i class="fas fa-download"></i> Tải xuống ảnh
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ` : ''}
           </div>
 
           <!-- Right Column: Room & Tenant -->
@@ -643,10 +669,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     
     // Show download button if contract image exists
     const downloadBtn = document.getElementById('downloadContractBtn');
-    if (contract.contract_image && downloadBtn) {
+    if (contract.contract_image_base64 && downloadBtn) {
       downloadBtn.style.display = 'inline-flex';
       downloadBtn.innerHTML = '<i class="fas fa-download"></i> Tải ảnh hợp đồng';
-      downloadBtn.onclick = () => downloadContractImage(contract.contract_image, `hop-dong-${contract.id}`);
+      downloadBtn.onclick = () => downloadContractImage(contract.contract_image_base64, `hop-dong-${contract.id}`);
     } else if (downloadBtn) {
       downloadBtn.style.display = 'none';
     }
@@ -693,11 +719,21 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   };
 
-  window.downloadContractImage = function(imageUrl, filename) {
+  window.downloadContractImage = function(imageData, filename) {
     try {
+      let downloadUrl;
+      
+      // Check if it's a base64 data URL
+      if (imageData.startsWith('data:image/')) {
+        downloadUrl = imageData;
+      } else {
+        // It's a regular URL
+        downloadUrl = imageData;
+      }
+      
       // Create a temporary link for downloading
       const link = document.createElement('a');
-      link.href = imageUrl;
+      link.href = downloadUrl;
       link.download = filename + '.jpg';
       link.target = '_blank';
       link.style.display = 'none';
