@@ -1083,6 +1083,10 @@ button:focus,
   background: var(--success);
 }
 
+.stat-icon.success {
+  background: var(--primary);
+}
+
 .stat-icon.rejected {
   background: var(--danger);
 }

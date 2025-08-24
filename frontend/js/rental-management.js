@@ -104,6 +104,20 @@ document.addEventListener("DOMContentLoaded", async () => {
                         contractsResponse.results : []);
       allContracts = contracts || [];
       console.log('Đã tải', allContracts.length, 'hợp đồng');
+      console.log('Chi tiết hợp đồng:', allContracts);
+      
+      // Log cấu trúc dữ liệu hợp đồng để debug
+      if (allContracts.length > 0) {
+        console.log('Cấu trúc hợp đồng đầu tiên:', allContracts[0]);
+        console.log('Các keys của hợp đồng:', Object.keys(allContracts[0]));
+        
+        // Tìm hợp đồng ACTIVE
+        const activeContracts = allContracts.filter(c => c.status === 'ACTIVE');
+        console.log('Số hợp đồng ACTIVE:', activeContracts.length);
+        if (activeContracts.length > 0) {
+          console.log('Hợp đồng ACTIVE đầu tiên:', activeContracts[0]);
+        }
+      }
       
       // Tải yêu cầu xem nhà từ API mới
       const rentalRequestsResponse = await api.getRentalRequests();
@@ -114,13 +128,29 @@ document.addEventListener("DOMContentLoaded", async () => {
                        (rentalRequestsResponse && Array.isArray(rentalRequestsResponse.results) ? 
                         rentalRequestsResponse.results : []);
       
+      console.log('Chi tiết rental requests:', rentalRequests);
+      
       console.log('Kiểm tra và cập nhật trạng thái các yêu cầu...');
       // Cập nhật trạng thái của yêu cầu dựa trên hợp đồng
       const updatedRequests = rentalRequests.map(request => {
-        // Kiểm tra xem yêu cầu đã có hợp đồng ACTIVE chưa
-        const hasActiveContract = allContracts.some(contract => 
-          contract.rental_request === request.id && contract.status === 'ACTIVE'
-        );
+        console.log(`Kiểm tra request #${request.id}:`, request);
+        
+        // Thay đổi logic: map theo room và tenant thay vì request ID
+        const hasActiveContract = allContracts.some(contract => {
+          console.log(`So sánh contract:`, contract);
+          console.log(`Contract fields:`, Object.keys(contract));
+          
+          // Kiểm tra xem contract có cùng room và tenant với request không
+          const roomMatch = contract.room === request.room && contract.status === 'ACTIVE';
+          const tenantMatch = contract.tenant === request.tenant && contract.status === 'ACTIVE';
+          const bothMatch = contract.room === request.room && contract.tenant === request.tenant && contract.status === 'ACTIVE';
+          
+          console.log(`Request room: ${request.room}, tenant: ${request.tenant}`);
+          console.log(`Contract room: ${contract.room}, tenant: ${contract.tenant}, status: ${contract.status}`);
+          console.log(`Room match: ${roomMatch}, Tenant match: ${tenantMatch}, Both match: ${bothMatch}`);
+          
+          return bothMatch;
+        });
         
         // Nếu có hợp đồng ACTIVE, đánh dấu yêu cầu là CONTRACTED
         if (hasActiveContract) {
@@ -293,15 +323,21 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     // Try to safely extract data with default values
-    // Sử dụng displayStatus nếu có (khi có hợp đồng ACTIVE) hoặc status thông thường
-    const status = request.displayStatus || request.status || 'UNKNOWN';
+    // Kiểm tra hợp đồng ACTIVE theo room và tenant
+    const activeContract = allContracts.find(c => {
+      // Map theo room và tenant thay vì request ID
+      return c.room === request.room && c.tenant === request.tenant && c.status === 'ACTIVE';
+    });
+    
+    // Sử dụng displayStatus nếu có, hoặc kiểm tra hợp đồng ACTIVE
+    const status = activeContract ? 'CONTRACTED' : (request.displayStatus || request.status || 'UNKNOWN');
     const statusClass = getStatusClass(status);
     const statusText = getStatusText(status);
     const createdAt = new Date(request.created_at || Date.now()).toLocaleString('vi-VN');
     const viewingTime = new Date(request.viewing_time || Date.now()).toLocaleString('vi-VN');
     
     // Kiểm tra xem yêu cầu này có hợp đồng ACTIVE không
-    const hasActiveContract = request.displayStatus === 'CONTRACTED';
+    const hasActiveContract = !!activeContract;
     
     return `
       <tr data-request-id="${request.id}">
@@ -558,19 +594,53 @@ document.addEventListener("DOMContentLoaded", async () => {
     console.log('Updating request stats with requests:', requests);
     console.log('Request statuses:', requests.map(r => r?.status));
     
-    const pending = requests.filter(r => r && r.status === 'PENDING').length;
-    const approved = requests.filter(r => r && r.status === 'ACCEPTED').length;
-    const rejected = requests.filter(r => r && r.status === 'DECLINED').length;
+    // Tính toán stats với logic cải thiện
+    let pending = 0;
+    let approved = 0;
+    let rejected = 0;
+    let contracted = 0;
+    
+    requests.forEach(request => {
+      if (!request) return;
+      
+      // Kiểm tra xem request có hợp đồng ACTIVE không theo room và tenant
+      const hasActiveContract = allContracts.some(c => {
+        return c.room === request.room && c.tenant === request.tenant && c.status === 'ACTIVE';
+      });
+      
+      if (hasActiveContract) {
+        contracted++;
+      } else {
+        switch (request.status) {
+          case 'PENDING':
+            pending++;
+            break;
+          case 'ACCEPTED':
+            approved++;
+            break;
+          case 'DECLINED':
+          case 'REJECTED':
+          case 'CANCELED':
+            rejected++;
+            break;
+        }
+      }
+    });
 
-    console.log('Stats: pending:', pending, 'approved:', approved, 'rejected:', rejected);
+    console.log('Stats: pending:', pending, 'approved:', approved, 'rejected:', rejected, 'contracted:', contracted);
 
     const pendingEl = document.getElementById('pendingCount');
     const approvedEl = document.getElementById('approvedCount');
     const rejectedEl = document.getElementById('rejectedCount');
+    const contractedEl = document.getElementById('contractedCount');
     
     if (pendingEl) pendingEl.textContent = pending;
     if (approvedEl) approvedEl.textContent = approved;
     if (rejectedEl) rejectedEl.textContent = rejected;
+    if (contractedEl) contractedEl.textContent = contracted;
+    
+    // Update tab badges
+    updateTabBadges();
   }
 
   function updateTenantsStats() {
@@ -627,13 +697,24 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     if (filter !== 'all') {
       if (filter === 'CONTRACTED') {
-        // Only show requests that have an ACTIVE contract detected earlier
-        filteredRequests = allRequests.filter(r => r && r.displayStatus === 'CONTRACTED');
-      } else {
-        // Exclude contracted items from other filters
+        // Show requests that have an ACTIVE contract theo room và tenant
         filteredRequests = allRequests.filter(r => {
           if (!r) return false;
-          if (r.displayStatus === 'CONTRACTED') return false;
+          return allContracts.some(c => {
+            return c.room === r.room && c.tenant === r.tenant && c.status === 'ACTIVE';
+          });
+        });
+      } else {
+        // Show requests by status, excluding those with ACTIVE contracts
+        filteredRequests = allRequests.filter(r => {
+          if (!r) return false;
+          
+          // Exclude if has active contract theo room và tenant
+          const hasActiveContract = allContracts.some(c => {
+            return c.room === r.room && c.tenant === r.tenant && c.status === 'ACTIVE';
+          });
+          if (hasActiveContract) return false;
+          
           return r.status === filter;
         });
       }
@@ -928,8 +1009,11 @@ document.addEventListener("DOMContentLoaded", async () => {
       const rejectBtn = document.getElementById('rejectBtn');
       const contractBtn = document.getElementById('contractBtn');
       
-      // Kiểm tra xem yêu cầu này có hợp đồng ACTIVE không
-      const hasActiveContract = request.displayStatus === 'CONTRACTED';
+      // Kiểm tra xem yêu cầu này có hợp đồng ACTIVE không theo room và tenant
+      const activeContract = allContracts.find(c => {
+        return c.room === request.room && c.tenant === request.tenant && c.status === 'ACTIVE';
+      });
+      const hasActiveContract = !!activeContract;
       
       if (hasActiveContract) {
         // Đã có hợp đồng ACTIVE
@@ -1482,13 +1566,19 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     // Try to safely extract data with default values
-    const status = request.displayStatus || request.status || 'UNKNOWN';
+    // Kiểm tra hợp đồng ACTIVE theo room và tenant
+    const activeContract = allContracts.find(c => {
+      // Map theo room và tenant thay vì request ID
+      return c.room === request.room && c.tenant === request.tenant && c.status === 'ACTIVE';
+    });
+    
+    const status = activeContract ? 'CONTRACTED' : (request.displayStatus || request.status || 'UNKNOWN');
     const statusInfo = getStatusInfo(status);
     const createdAt = formatDate(request.created_at || new Date());
     const viewingTime = formatDate(request.viewing_time || request.created_at || new Date());
     
     // Kiểm tra xem yêu cầu này có hợp đồng ACTIVE không
-    const hasActiveContract = request.displayStatus === 'CONTRACTED';
+    const hasActiveContract = !!activeContract;
     
     return `
       <div class="request-card" onclick="viewRequest(${request.id})">
@@ -1646,13 +1736,26 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   function updateTabBadges() {
-    const pendingCount = allRequests.filter(r => r.status === 'PENDING').length;
+    // Count only pending requests that don't have active contracts theo room và tenant
+    const pendingCount = allRequests.filter(r => {
+      if (!r || r.status !== 'PENDING') return false;
+      
+      // Exclude requests that already have active contracts
+      const hasActiveContract = allContracts.some(c => {
+        return c.room === r.room && c.tenant === r.tenant && c.status === 'ACTIVE';
+      });
+      return !hasActiveContract;
+    }).length;
+    
     const activeTenantsCount = allTenants.filter(t => {
       return allContracts.some(c => c.tenant === t.id && c.status === 'ACTIVE');
     }).length;
     
-    document.getElementById('pending-badge').textContent = pendingCount;
-    document.getElementById('tenants-badge').textContent = activeTenantsCount;
+    const pendingBadge = document.getElementById('pending-badge');
+    const tenantsBadge = document.getElementById('tenants-badge');
+    
+    if (pendingBadge) pendingBadge.textContent = pendingCount;
+    if (tenantsBadge) tenantsBadge.textContent = activeTenantsCount;
   }
 
   function formatDate(dateString) {

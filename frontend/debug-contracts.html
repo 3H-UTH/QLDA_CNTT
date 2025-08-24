@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Contract Data</title>
+</head>
+<body>
+    <h1>Debug Contract Data</h1>
+    <div id="debug-output"></div>
+
+    <script src="js/api.js"></script>
+    <script>
+        async function debugContractData() {
+            const api = new RentalAPI();
+            const output = document.getElementById('debug-output');
+            
+            try {
+                // Load contracts
+                console.log('Loading contracts...');
+                const contractsResponse = await api.getContracts();
+                console.log('Contracts response:', contractsResponse);
+                
+                const contracts = Array.isArray(contractsResponse) ? contractsResponse :
+                               (contractsResponse && Array.isArray(contractsResponse.results) ? 
+                                contractsResponse.results : []);
+                
+                // Load rental requests  
+                console.log('Loading rental requests...');
+                const requestsResponse = await api.getRentalRequests();
+                console.log('Requests response:', requestsResponse);
+                
+                const requests = Array.isArray(requestsResponse) ? requestsResponse :
+                               (requestsResponse && Array.isArray(requestsResponse.results) ? 
+                                requestsResponse.results : []);
+                
+                // Display data structure
+                let html = `
+                    <h2>Contracts Data (${contracts.length} items)</h2>
+                    <pre>${JSON.stringify(contracts, null, 2)}</pre>
+                    
+                    <h2>Rental Requests Data (${requests.length} items)</h2>
+                    <pre>${JSON.stringify(requests, null, 2)}</pre>
+                    
+                    <h2>Contract-Request Mapping Analysis</h2>
+                `;
+                
+                // Analyze mappings
+                requests.forEach(request => {
+                    const matchingContracts = contracts.filter(contract => {
+                        const match1 = contract.rental_request === request.id;
+                        const match2 = contract.request === request.id;
+                        const match3 = contract.request_id === request.id;
+                        return match1 || match2 || match3;
+                    });
+                    
+                    html += `<p>Request ${request.id}: ${matchingContracts.length} matching contracts</p>`;
+                    if (matchingContracts.length > 0) {
+                        html += `<pre>${JSON.stringify(matchingContracts, null, 2)}</pre>`;
+                    }
+                });
+                
+                output.innerHTML = html;
+                
+            } catch (error) {
+                console.error('Debug error:', error);
+                output.innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
+            }
+        }
+        
+        // Run debug when page loads
+        document.addEventListener('DOMContentLoaded', debugContractData);
+    </script>
+</body>
+</html>
