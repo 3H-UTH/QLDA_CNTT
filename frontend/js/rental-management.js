@@ -379,9 +379,6 @@ document.addEventListener("DOMContentLoaded", async () => {
               <i class="fas fa-eye"></i> Xem
             </button>
             ${hasActiveContract ? `
-              <button class="btn btn-sm btn-info" onclick="viewContractForRequest(${request.id})" title="Xem hợp đồng">
-                <i class="fas fa-file-contract"></i> Xem HĐ
-              </button>
               <button class="btn btn-sm btn-danger" onclick="cancelContract(${request.id})" title="Hủy hợp đồng">
                 <i class="fas fa-ban"></i> Hủy HĐ
               </button>
@@ -1016,21 +1013,10 @@ document.addEventListener("DOMContentLoaded", async () => {
       const hasActiveContract = !!activeContract;
       
       if (hasActiveContract) {
-        // Đã có hợp đồng ACTIVE
+        // Đã có hợp đồng ACTIVE - Ẩn tất cả các nút quản lý yêu cầu
         if (approveBtn) approveBtn.style.display = 'none';
         if (rejectBtn) rejectBtn.style.display = 'none';
-        if (contractBtn) {
-          contractBtn.innerHTML = '<i class="fas fa-file-contract"></i> Xem hợp đồng';
-          contractBtn.onclick = function() { viewContractForRequest(request.id); };
-          contractBtn.style.display = 'inline-block';
-        }
-        // Thêm nút hủy hợp đồng
-        const cancelBtn = document.getElementById('rejectBtn');
-        if (cancelBtn) {
-          cancelBtn.innerHTML = '<i class="fas fa-ban"></i> Hủy hợp đồng';
-          cancelBtn.onclick = function() { cancelContract(request.id); };
-          cancelBtn.style.display = 'inline-block';
-        }
+        if (contractBtn) contractBtn.style.display = 'none';
       } else if (request.status === 'PENDING') {
         if (approveBtn) approveBtn.style.display = 'inline-block';
         if (rejectBtn) {
@@ -1663,9 +1649,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         
         <div class="card-actions">
           ${hasActiveContract ? `
-            <button class="btn btn-sm btn-info" onclick="event.stopPropagation(); viewContractForRequest(${request.id})">
-              <i class="fas fa-file-contract"></i> Xem hợp đồng
-            </button>
             <button class="btn btn-sm btn-danger" onclick="event.stopPropagation(); cancelContract(${request.id})">
               <i class="fas fa-ban"></i> Hủy hợp đồng
             </button>
