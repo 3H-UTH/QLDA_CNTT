@@ -406,7 +406,7 @@
           
           roomList.innerHTML = '<div style="text-align: center; padding: 2rem;">Đang tải dữ liệu phòng...</div>';
           
-          const response = await fetch('http://127.0.0.1:8000/api/rooms/');
+          const response = await fetch('https://qlda-cntt.onrender.com/api/rooms/');
           console.log('API response status:', response.status);
           
           if (!response.ok) {

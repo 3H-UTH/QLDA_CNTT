@@ -50,7 +50,7 @@ async function refreshToken() {
     if (!refreshToken) return false;
     
     try {
-        const response = await fetch('/api/auth/token/refresh/', {
+        const response = await fetch('https://qlda-cntt.onrender.com/api/auth/token/refresh/', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
