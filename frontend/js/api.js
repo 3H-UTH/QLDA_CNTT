@@ -1,8 +1,8 @@
 // API Client for 3H Rental
 class RentalAPI {
   constructor() {
-    // Use same origin to avoid CORS issues
-    this.baseURL = 'http://127.0.0.1:8000/api';
+    // Point to Render backend
+    this.baseURL = 'https://qlda-cntt.onrender.com/api';
     this.token = localStorage.getItem('access_token');
     this.refreshToken = localStorage.getItem('refresh_token');
   }

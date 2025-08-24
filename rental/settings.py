@@ -68,6 +68,7 @@ for origin in cors_origins.split(','):
 
 # Thêm cấu hình CORS để hỗ trợ phát triển
 CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOW_ALL_ORIGINS = True  # Tạm thời cho phép mọi origin để test
 CORS_ALLOWED_HEADERS = [
     'accept',
     'accept-encoding',
