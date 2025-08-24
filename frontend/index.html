@@ -15,6 +15,235 @@
     <link rel="stylesheet" href="css/styles.css" />
     <link rel="stylesheet" href="css/profile.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    
+    <!-- Additional styles for filter -->
+    <style>
+      /* Enhanced search toolbar styles */
+      .toolbar {
+        background: var(--card-bg, #ffffff);
+        border: 1px solid var(--border, #e2e8f0);
+        border-radius: var(--radius-lg, 0.75rem);
+        padding: 1.5rem;
+        box-shadow: var(--shadow-sm, 0 1px 2px 0 rgb(0 0 0 / 0.05));
+      }
+      
+      .search-group {
+        display: grid;
+        grid-template-columns: 2fr 2fr 1fr 1fr auto;
+        gap: 1rem;
+        align-items: end;
+        margin-bottom: 0;
+      }
+      
+      .form-group {
+        display: flex;
+        flex-direction: column;
+      }
+      
+      .input {
+        padding: 0.75rem;
+        border: 1px solid var(--border, #e2e8f0);
+        border-radius: var(--radius-md, 0.5rem);
+        font-size: 0.875rem;
+        transition: all 0.2s ease;
+        background: var(--bg-primary, #fefefe);
+      }
+      
+      .input:focus {
+        outline: none;
+        border-color: var(--primary, #0f172a);
+        box-shadow: 0 0 0 3px rgb(15 23 42 / 0.1);
+      }
+      
+      .btn {
+        padding: 0.75rem 1.25rem;
+        border: none;
+        border-radius: var(--radius-md, 0.5rem);
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        white-space: nowrap;
+      }
+      
+      .btn-primary {
+        background: var(--primary, #0f172a);
+        color: white;
+      }
+      
+      .btn-primary:hover {
+        background: var(--primary-light, #1e293b);
+        transform: translateY(-1px);
+        box-shadow: var(--shadow-md, 0 4px 6px -1px rgb(0 0 0 / 0.1));
+      }
+      
+      .filter-row {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        margin-top: 1.25rem;
+        padding-top: 1.25rem;
+        border-top: 1px solid var(--border, #e2e8f0);
+        flex-wrap: wrap;
+      }
+      
+      .filter-label {
+        font-weight: 600;
+        color: var(--text-primary, #1e293b);
+        font-size: 0.875rem;
+        white-space: nowrap;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+      
+      .status-filter-group {
+        display: flex;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+        flex: 1;
+      }
+      
+      .filter-btn {
+        display: flex;
+        align-items: center;
+        gap: 0.375rem;
+        padding: 0.625rem 1rem;
+        border: 2px solid var(--border, #e2e8f0);
+        border-radius: var(--radius-md, 0.5rem);
+        background: var(--bg-primary, #fefefe);
+        color: var(--text-secondary, #475569);
+        font-weight: 500;
+        font-size: 0.8rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        white-space: nowrap;
+        min-width: fit-content;
+      }
+      
+      .filter-btn:hover {
+        border-color: var(--primary, #0f172a);
+        background: var(--bg-secondary, #f8fafc);
+        transform: translateY(-1px);
+        box-shadow: var(--shadow-sm, 0 1px 2px 0 rgb(0 0 0 / 0.05));
+      }
+      
+      .filter-btn.active {
+        border-color: var(--primary, #0f172a);
+        background: var(--primary, #0f172a);
+        color: white;
+        box-shadow: var(--shadow-sm, 0 1px 2px 0 rgb(0 0 0 / 0.05));
+      }
+      
+      .filter-btn[data-status="EMPTY"] {
+        border-color: var(--accent-green, #10b981);
+      }
+      
+      .filter-btn[data-status="EMPTY"].active {
+        background: var(--accent-green, #10b981);
+        border-color: var(--accent-green, #10b981);
+      }
+      
+      .filter-btn[data-status="RENTED"] {
+        border-color: var(--danger, #ef4444);
+      }
+      
+      .filter-btn[data-status="RENTED"].active {
+        background: var(--danger, #ef4444);
+        border-color: var(--danger, #ef4444);
+      }
+      
+      .filter-btn[data-status="MAINT"] {
+        border-color: var(--warning, #f59e0b);
+      }
+      
+      .filter-btn[data-status="MAINT"].active {
+        background: var(--warning, #f59e0b);
+        border-color: var(--warning, #f59e0b);
+      }
+      
+      .property-card {
+        transition: all 0.3s ease;
+      }
+      
+      .property-card.hidden {
+        display: none;
+      }
+      
+      /* Responsive design */
+      @media (max-width: 1200px) {
+        .search-group {
+          grid-template-columns: 1fr 1fr 1fr 1fr auto;
+        }
+      }
+      
+      @media (max-width: 992px) {
+        .search-group {
+          grid-template-columns: 1fr 1fr;
+          grid-template-rows: auto auto auto;
+          gap: 0.75rem;
+        }
+        
+        .search-group .form-group:nth-child(1) {
+          grid-column: 1 / -1;
+        }
+        
+        .search-group .form-group:nth-child(2) {
+          grid-column: 1 / -1;
+        }
+        
+        .search-group .btn {
+          grid-column: 1 / -1;
+          justify-self: center;
+          max-width: 200px;
+        }
+      }
+      
+      @media (max-width: 768px) {
+        .toolbar {
+          padding: 1rem;
+        }
+        
+        .search-group {
+          grid-template-columns: 1fr;
+          gap: 0.75rem;
+        }
+        
+        .filter-row {
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 0.75rem;
+          margin-top: 1rem;
+          padding-top: 1rem;
+        }
+        
+        .status-filter-group {
+          width: 100%;
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 0.5rem;
+        }
+        
+        .filter-btn {
+          font-size: 0.75rem;
+          padding: 0.5rem 0.75rem;
+          justify-content: center;
+        }
+      }
+      
+      @media (max-width: 480px) {
+        .status-filter-group {
+          grid-template-columns: 1fr;
+        }
+        
+        .filter-btn {
+          width: 100%;
+        }
+      }
+    </style>
   </head>
   <body>
     <header id="navbar"></header>
@@ -66,6 +295,32 @@
               <i class="fas fa-search"></i>
               Tìm kiếm
             </button>
+          </div>
+          
+          <!-- Status Filter integrated into search -->
+          <div class="filter-row">
+            <span class="filter-label">
+              <i class="fas fa-filter"></i>
+              Lọc theo trạng thái:
+            </span>
+            <div class="status-filter-group">
+              <button type="button" class="filter-btn active" data-status="ALL">
+                <i class="fas fa-home"></i>
+                Tất cả (<span id="count-all">0</span>)
+              </button>
+              <button type="button" class="filter-btn" data-status="EMPTY">
+                <i class="fas fa-check-circle"></i>
+                Còn trống (<span id="count-empty">0</span>)
+              </button>
+              <button type="button" class="filter-btn" data-status="RENTED">
+                <i class="fas fa-times-circle"></i>
+                Đã thuê (<span id="count-rented">0</span>)
+              </button>
+              <button type="button" class="filter-btn" data-status="MAINT">
+                <i class="fas fa-tools"></i>
+                Bảo trì (<span id="count-maint">0</span>)
+              </button>
+            </div>
           </div>
         </form>
       </section>
@@ -137,6 +392,8 @@
       }
       
       // Manual room loading function
+      let allRooms = []; // Store all rooms for filtering
+      
       async function loadRoomsDirectly() {
         try {
           console.log('loadRoomsDirectly: Starting...');
@@ -159,108 +416,14 @@
           const data = await response.json();
           console.log('Rooms data received:', data.results.length, 'rooms');
           
-          // Clear loading message
-          roomList.innerHTML = '';
+          // Store all rooms for filtering
+          allRooms = data.results;
           
-          if (data.results.length === 0) {
-            roomList.innerHTML = `
-              <div class="empty-state" style="grid-column: 1 / -1; text-align: center; padding: 2rem;">
-                <i class="fas fa-home" style="font-size: 3rem; color: #ccc; margin-bottom: 1rem;"></i>
-                <h3>Chưa có phòng nào được đăng</h3>
-                <p>Owner chưa thêm phòng nào vào hệ thống.</p>
-              </div>
-            `;
-            return;
-          }
+          // Update status counts
+          updateStatusCounts();
           
-          // Render rooms
-          data.results.forEach(room => {
-            const div = document.createElement('div');
-            div.className = 'property-card fade-in';
-            
-            const img = room.image || 'assets/placeholder.svg';
-            const price = parseFloat(room.base_price || 0).toLocaleString('vi-VN') + '₫';
-            
-            // Function to translate status to Vietnamese
-            const getStatusText = (status) => {
-              const statusMap = {
-                'EMPTY': 'Còn trống',
-                'RENTED': 'Đã thuê',
-                'MAINT': 'Bảo trì'
-              };
-              return statusMap[status] || status;
-            };
-            
-            const getStatusColor = (status) => {
-              const colorMap = {
-                'EMPTY': '#4CAF50',      // Green for available
-                'RENTED': '#f44336',     // Red for rented
-                'MAINT': '#9c27b0'       // Purple for maintenance
-              };
-              return colorMap[status] || '#4CAF50';
-            };
-            
-            div.innerHTML = `
-              <div style="position: relative; overflow: hidden;">
-                <img src="${img}" alt="${room.name}" loading="lazy" style="width: 100%; height: 200px; object-fit: cover;">
-                <div class="badge status-available" style="position: absolute; top: 1rem; right: 1rem; background: ${getStatusColor(room.status)}; color: white; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem;">
-                  ${getStatusText(room.status)}
-                </div>
-              </div>
-              <div class="body" style="padding: 1rem;">
-                <div class="price" style="display: flex; align-items: baseline; gap: 0.5rem; margin-bottom: 0.75rem;">
-                  <span style="font-size: 1.75rem; font-weight: 700; color: var(--accent-gold, #f39c12);">
-                    ${price}
-                  </span>
-                  <span style="font-size: 0.875rem; font-weight: 500; color: var(--text-muted, #666);">
-                    /tháng
-                  </span>
-                </div>
-                
-                <h3 class="title" style="font-size: 1.25rem; font-weight: 600; margin-bottom: 0.5rem; color: var(--text-primary, #333);">
-                  ${room.name}
-                </h3>
-                
-                <div class="location" style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem; color: var(--text-muted, #666); font-size: 0.875rem;">
-                  <i class="fas fa-map-marker-alt" style="color: var(--accent-blue, #3498db);"></i>
-                  <span>${room.address}</span>
-                </div>
-                
-                <div class="features" style="display: flex; gap: 0.75rem; margin-bottom: 1rem; flex-wrap: wrap;">
-                  <div class="badge feature-badge" style="display: flex; align-items: center; gap: 0.25rem; background: #f8f9fa; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem;">
-                    <i class="fas fa-bed" style="color: var(--accent-blue, #3498db);"></i>
-                    <span>${room.bedrooms} PN</span>
-                  </div>
-                  <div class="badge feature-badge" style="display: flex; align-items: center; gap: 0.25rem; background: #f8f9fa; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem;">
-                    <i class="fas fa-bath" style="color: var(--accent-blue, #3498db);"></i>
-                    <span>${room.bathrooms} WC</span>
-                  </div>
-                  <div class="badge feature-badge" style="display: flex; align-items: center; gap: 0.25rem; background: #f8f9fa; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem;">
-                    <i class="fas fa-ruler-combined" style="color: var(--accent-blue, #3498db);"></i>
-                    <span>${room.area_m2}m²</span>
-                  </div>
-                </div>
-                
-                <p style="color: var(--text-muted, #666); margin-bottom: 1.5rem; line-height: 1.4; font-size: 0.875rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis; height: 2.4em;">
-                  ${room.detail || 'Phòng hiện đại, đầy đủ tiện nghi'}
-                </p>
-                
-                <div class="actions" style="display: flex; gap: 0.75rem;">
-                  <a class="btn btn-primary" href="room.html?id=${room.id}" style="flex: 1; justify-content: center; display: flex; align-items: center; background: var(--primary, #3498db); color: white; padding: 0.75rem; text-decoration: none; border-radius: 4px;">
-                    <i class="fas fa-eye"></i>
-                    Xem chi tiết
-                  </a>
-                  ${room.status === 'EMPTY' ? `
-                    <button class="btn btn-accent" onclick="handleQuickRental(${room.id})" style="flex: 1; justify-content: center; display: flex; align-items: center; background: var(--accent, #e74c3c); color: white; padding: 0.75rem; border: none; border-radius: 4px; cursor: pointer;">
-                      <i class="fas fa-key"></i>
-                      Thuê ngay
-                    </button>
-                  ` : ''}
-                </div>
-              </div>
-            `;
-            roomList.appendChild(div);
-          });
+          // Render rooms based on current filter
+          renderRooms(allRooms);
           
           console.log('Rooms rendered successfully');
           
@@ -271,6 +434,149 @@
             roomList.innerHTML = `<div style="text-align: center; padding: 2rem; color: red;">Lỗi khi tải dữ liệu: ${error.message}</div>`;
           }
         }
+      }
+      
+      // Update status counts in filter buttons
+      function updateStatusCounts() {
+        const counts = {
+          all: allRooms.length,
+          empty: allRooms.filter(room => room.status === 'EMPTY').length,
+          rented: allRooms.filter(room => room.status === 'RENTED').length,
+          maint: allRooms.filter(room => room.status === 'MAINT').length
+        };
+        
+        document.getElementById('count-all').textContent = counts.all;
+        document.getElementById('count-empty').textContent = counts.empty;
+        document.getElementById('count-rented').textContent = counts.rented;
+        document.getElementById('count-maint').textContent = counts.maint;
+      }
+      
+      // Render rooms based on filter
+      function renderRooms(rooms) {
+        const roomList = document.getElementById('room-list');
+        
+        // Clear loading message
+        roomList.innerHTML = '';
+        
+        if (rooms.length === 0) {
+          roomList.innerHTML = `
+            <div class="empty-state" style="grid-column: 1 / -1; text-align: center; padding: 2rem;">
+              <i class="fas fa-home" style="font-size: 3rem; color: #ccc; margin-bottom: 1rem;"></i>
+              <h3>Không tìm thấy phòng nào</h3>
+              <p>Thử thay đổi bộ lọc để xem kết quả khác.</p>
+            </div>
+          `;
+          return;
+        }
+        
+        // Render rooms
+        rooms.forEach(room => {
+          const div = document.createElement('div');
+          div.className = 'property-card fade-in';
+          div.setAttribute('data-status', room.status);
+          
+          const img = room.image || 'assets/placeholder.svg';
+          const price = parseFloat(room.base_price || 0).toLocaleString('vi-VN') + '₫';
+          
+          // Function to translate status to Vietnamese
+          const getStatusText = (status) => {
+            const statusMap = {
+              'EMPTY': 'Còn trống',
+              'RENTED': 'Đã thuê',
+              'MAINT': 'Bảo trì'
+            };
+            return statusMap[status] || status;
+          };
+          
+          const getStatusColor = (status) => {
+            const colorMap = {
+              'EMPTY': '#4CAF50',      // Green for available
+              'RENTED': '#f44336',     // Red for rented
+              'MAINT': '#9c27b0'       // Purple for maintenance
+            };
+            return colorMap[status] || '#4CAF50';
+          };
+          
+          div.innerHTML = `
+            <div style="position: relative; overflow: hidden;">
+              <img src="${img}" alt="${room.name}" loading="lazy" style="width: 100%; height: 200px; object-fit: cover;">
+              <div class="badge status-available" style="position: absolute; top: 1rem; right: 1rem; background: ${getStatusColor(room.status)}; color: white; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem;">
+                ${getStatusText(room.status)}
+              </div>
+            </div>
+            <div class="body" style="padding: 1rem;">
+              <div class="price" style="display: flex; align-items: baseline; gap: 0.5rem; margin-bottom: 0.75rem;">
+                <span style="font-size: 1.75rem; font-weight: 700; color: var(--accent-gold, #f39c12);">
+                  ${price}
+                </span>
+                <span style="font-size: 0.875rem; font-weight: 500; color: var(--text-muted, #666);">
+                  /tháng
+                </span>
+              </div>
+              
+              <h3 class="title" style="font-size: 1.25rem; font-weight: 600; margin-bottom: 0.5rem; color: var(--text-primary, #333);">
+                ${room.name}
+              </h3>
+              
+              <div class="location" style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem; color: var(--text-muted, #666); font-size: 0.875rem;">
+                <i class="fas fa-map-marker-alt" style="color: var(--accent-blue, #3498db);"></i>
+                <span>${room.address}</span>
+              </div>
+              
+              <div class="features" style="display: flex; gap: 0.75rem; margin-bottom: 1rem; flex-wrap: wrap;">
+                <div class="badge feature-badge" style="display: flex; align-items: center; gap: 0.25rem; background: #f8f9fa; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem;">
+                  <i class="fas fa-bed" style="color: var(--accent-blue, #3498db);"></i>
+                  <span>${room.bedrooms} PN</span>
+                </div>
+                <div class="badge feature-badge" style="display: flex; align-items: center; gap: 0.25rem; background: #f8f9fa; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem;">
+                  <i class="fas fa-bath" style="color: var(--accent-blue, #3498db);"></i>
+                  <span>${room.bathrooms} WC</span>
+                </div>
+                <div class="badge feature-badge" style="display: flex; align-items: center; gap: 0.25rem; background: #f8f9fa; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem;">
+                  <i class="fas fa-ruler-combined" style="color: var(--accent-blue, #3498db);"></i>
+                  <span>${room.area_m2}m²</span>
+                </div>
+              </div>
+              
+              <p style="color: var(--text-muted, #666); margin-bottom: 1.5rem; line-height: 1.4; font-size: 0.875rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis; height: 2.4em;">
+                ${room.detail || 'Phòng hiện đại, đầy đủ tiện nghi'}
+              </p>
+              
+              <div class="actions" style="display: flex; gap: 0.75rem;">
+                <a class="btn btn-primary" href="room.html?id=${room.id}" style="flex: 1; justify-content: center; display: flex; align-items: center; background: var(--primary, #3498db); color: white; padding: 0.75rem; text-decoration: none; border-radius: 4px;">
+                  <i class="fas fa-eye"></i>
+                  Xem chi tiết
+                </a>
+                ${room.status === 'EMPTY' ? `
+                  <button class="btn btn-accent" onclick="handleQuickRental(${room.id})" style="flex: 1; justify-content: center; display: flex; align-items: center; background: var(--accent, #e74c3c); color: white; padding: 0.75rem; border: none; border-radius: 4px; cursor: pointer;">
+                    <i class="fas fa-key"></i>
+                    Thuê ngay
+                  </button>
+                ` : ''}
+              </div>
+            </div>
+          `;
+          roomList.appendChild(div);
+        });
+      }
+      
+      // Filter rooms by status
+      function filterRoomsByStatus(status) {
+        let filteredRooms;
+        
+        if (status === 'ALL') {
+          filteredRooms = allRooms;
+        } else {
+          filteredRooms = allRooms.filter(room => room.status === status);
+        }
+        
+        renderRooms(filteredRooms);
+        
+        // Update active filter button
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+          btn.classList.remove('active');
+        });
+        document.querySelector(`[data-status="${status}"]`).classList.add('active');
       }
       
       // Initialize when DOM is ready
@@ -300,6 +606,17 @@
             loadRoomsDirectly();
           });
         }
+        
+        // Setup status filter buttons
+        const filterButtons = document.querySelectorAll('.filter-btn');
+        filterButtons.forEach(button => {
+          button.addEventListener('click', (e) => {
+            e.preventDefault();
+            const status = button.getAttribute('data-status');
+            console.log('Filter button clicked:', status);
+            filterRoomsByStatus(status);
+          });
+        });
       });
     </script>
   </body>
