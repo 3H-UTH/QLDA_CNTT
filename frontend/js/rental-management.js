@@ -1501,6 +1501,16 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   };
 
+  // Helper function to convert file to base64
+  function convertFileToBase64(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
   window.viewTenantInvoices = function() {
     // TODO: Navigate to invoice management page
     console.log('View tenant invoices:', currentTenantId);
@@ -1969,24 +1979,26 @@ document.addEventListener("DOMContentLoaded", async () => {
         showToast('Đã chấp nhận yêu cầu xem nhà', 'info');
       }
       
-      // Use appropriate API method based on whether we have file upload
-      if (hasImage) {
-        // Use FormData for file upload
-        await api.createContractWithFile(formData);
-      } else {
-        // Convert FormData to object for JSON API
-        const contractData = {};
-        for (let [key, value] of formData.entries()) {
-          if (key === 'rental_request_id' || key === 'room' || key === 'tenant') {
-            contractData[key] = parseInt(value);
-          } else if (key === 'monthly_rent' || key === 'deposit') {
-            contractData[key] = parseFloat(value) || 0;
-          } else if (key !== 'contract_image') { // Skip empty file input
-            contractData[key] = value;
-          }
+      // Convert FormData to object for JSON API
+      const contractData = {};
+      for (let [key, value] of formData.entries()) {
+        if (key === 'rental_request_id' || key === 'room' || key === 'tenant') {
+          contractData[key] = parseInt(value);
+        } else if (key === 'monthly_rent' || key === 'deposit') {
+          contractData[key] = parseFloat(value) || 0;
+        } else if (key !== 'contract_image') { // Skip file input, will handle separately
+          contractData[key] = value;
         }
-        await api.createContract(contractData);
       }
+      
+      // Convert image to base64 if present
+      if (hasImage) {
+        const base64Image = await convertFileToBase64(imageFile);
+        contractData.contract_image_base64 = base64Image;
+      }
+      
+      // Always use JSON API with base64 image
+      await api.createContract(contractData);
       
       closeContractModal();
       showToast('Tạo hợp đồng thành công!', 'success');

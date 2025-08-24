@@ -7,15 +7,21 @@ from decimal import Decimal
 User = get_user_model()
 
 class RoomSerializer(serializers.ModelSerializer):
-    image = serializers.ImageField(required=False, allow_null=True)
+    # Override image field to accept both file and base64 string
+    image = serializers.CharField(required=False, allow_null=True, allow_blank=True)
     additional_images = serializers.CharField(required=False, allow_blank=True, write_only=True)
+    image_base64 = serializers.CharField(required=False, allow_blank=True, write_only=True, help_text="Base64 encoded main image")
+    images_base64 = serializers.ListField(
+        child=serializers.CharField(),
+        required=False,
+        allow_empty=True,
+        write_only=True,
+        help_text="List of base64 encoded images"
+    )
     
     class Meta:
         model = Room
         fields = "__all__"
-        extra_kwargs = {
-            'images': {'read_only': True},  # images field chỉ đọc, sẽ được tạo từ additional_images
-        }
         
     def validate_bedrooms(self, value):
         if value < 1:
@@ -34,26 +40,113 @@ class RoomSerializer(serializers.ModelSerializer):
     
     def create(self, validated_data):
         additional_images_json = validated_data.pop('additional_images', None)
+        image_base64 = validated_data.pop('image_base64', None)
+        images_base64 = validated_data.pop('images_base64', None)
         
-        # Tạo room trước
+        # Xử lý ảnh chính: lưu trực tiếp base64 string vào cột image
+        image_data = validated_data.get('image')
+        if image_data and isinstance(image_data, str) and image_data.startswith('data:image/'):
+            # Lưu base64 string trực tiếp vào cột image
+            validated_data['image'] = image_data
+        elif image_base64:
+            # Fallback cho image_base64 field (deprecated)
+            validated_data['image'] = image_base64
+        
+        # Xử lý array images từ frontend
+        images_data = validated_data.get('images')
+        if images_data and isinstance(images_data, list):
+            # Frontend đã gửi array string, lưu trực tiếp
+            validated_data['images'] = images_data
+        elif images_base64:
+            # Fallback cho images_base64 field (deprecated)
+            validated_data['images'] = images_base64
+        
+        # Tạo room
         room = super().create(validated_data)
         
-        # Xử lý nhiều ảnh
-        self._process_images(room, additional_images_json)
+        # Xử lý legacy additional_images nếu có
+        if additional_images_json and not images_data and not images_base64:
+            self._process_images(room, additional_images_json)
         
         return room
     
     def update(self, instance, validated_data):
         additional_images_json = validated_data.pop('additional_images', None)
+        image_base64 = validated_data.pop('image_base64', None)
+        images_base64 = validated_data.pop('images_base64', None)
+        
+        # Xử lý ảnh chính: lưu trực tiếp base64 string vào cột image
+        image_data = validated_data.get('image')
+        if image_data and isinstance(image_data, str) and image_data.startswith('data:image/'):
+            # Lưu base64 string trực tiếp vào cột image
+            validated_data['image'] = image_data
+        elif image_base64:
+            # Fallback cho image_base64 field (deprecated)
+            validated_data['image'] = image_base64
+        
+        # Xử lý array images từ frontend
+        images_data = validated_data.get('images')
+        if images_data and isinstance(images_data, list):
+            # Frontend đã gửi array string, lưu trực tiếp
+            validated_data['images'] = images_data
+        elif images_base64:
+            # Fallback cho images_base64 field (deprecated)
+            validated_data['images'] = images_base64
         
         # Cập nhật room
         room = super().update(instance, validated_data)
         
-        # Xử lý nhiều ảnh nếu có
-        if additional_images_json is not None:
+        # Xử lý legacy additional_images nếu có
+        if additional_images_json is not None and not images_data and not images_base64:
             self._process_images(room, additional_images_json)
         
         return room
+    
+    def _convert_base64_to_file(self, base64_string, filename_prefix='image'):
+        """Convert base64 string to Django file object"""
+        import base64
+        import uuid
+        from django.core.files.base import ContentFile
+        
+        if not base64_string.startswith('data:image/'):
+            raise serializers.ValidationError("Invalid base64 image format")
+        
+        # Extract format and data
+        format_part, imgstr = base64_string.split(';base64,')
+        ext = format_part.split('/')[-1]
+        
+        # Generate unique filename
+        filename = f"{filename_prefix}_{uuid.uuid4().hex[:8]}.{ext}"
+        
+        # Decode and create file
+        data = base64.b64decode(imgstr)
+        return ContentFile(data, name=filename)
+    
+    def _process_base64_images(self, room, images_base64_list):
+        """Xử lý và lưu danh sách ảnh từ base64"""
+        all_images = []
+        
+        # Convert all base64 images and store them
+        for i, base64_string in enumerate(images_base64_list):
+            try:
+                # Store the base64 data directly in the images array
+                all_images.append(base64_string)
+            except Exception as e:
+                print(f"Error processing image {i}: {e}")
+                continue
+        
+        # Lưu vào field images
+        room.images = all_images
+        room.save(update_fields=['images'])
+        
+        # Also save the first image as main image if not already set
+        if not room.image and all_images:
+            try:
+                room.image = self._convert_base64_to_file(all_images[0], f'room_{room.id}_main')
+                room.save(update_fields=['image'])
+                print(f"Saved first image as main image for room {room.id}")
+            except Exception as e:
+                print(f"Error saving main image: {e}")
     
     def _process_images(self, room, additional_images_json):
         """Xử lý và lưu danh sách ảnh"""
@@ -135,10 +228,11 @@ class RentalRequestSerializer(serializers.ModelSerializer):
 
 class ContractCreateSerializer(serializers.ModelSerializer):
     rental_request_id = serializers.IntegerField(write_only=True, required=False)
+    contract_image_base64 = serializers.CharField(write_only=True, required=False, allow_blank=True, help_text="Base64 encoded contract image")
     
     class Meta:
         model = Contract
-        fields = ["id", "room", "tenant", "start_date", "end_date", "monthly_rent", "deposit", "billing_cycle", "status", "notes", "contract_image", "rental_request_id"]
+        fields = ["id", "room", "tenant", "start_date", "end_date", "monthly_rent", "deposit", "billing_cycle", "status", "notes", "contract_image", "contract_image_base64", "rental_request_id"]
         read_only_fields = ["status"]
 
     def validate(self, attrs):
@@ -169,11 +263,21 @@ class ContractCreateSerializer(serializers.ModelSerializer):
         return attrs
         
     def create(self, validated_data):
+        # Xử lý contract_image_base64
+        contract_image_base64 = validated_data.pop('contract_image_base64', None)
+        
         # Đảm bảo trạng thái là ACTIVE
         validated_data['status'] = Contract.ACTIVE
         
         # Lấy rental_request nếu có
         rental_request = validated_data.get('rental_request')
+        
+        # Nếu có contract_image_base64, lưu vào cả 2 field
+        if contract_image_base64 and contract_image_base64.startswith('data:image/'):
+            # Lưu base64 string vào contract_image_base64 field
+            validated_data['contract_image_base64'] = contract_image_base64
+            # Có thể cũng convert thành file cho contract_image nếu cần
+            # validated_data['contract_image'] = self._convert_base64_to_file(contract_image_base64, 'contract')
         
         contract = super().create(validated_data)
         
@@ -197,7 +301,7 @@ class ContractSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Contract
-        fields = ["id","room","tenant","tenant_name","tenant_phone","tenant_email","room_name","monthly_rent","start_date","end_date","deposit","billing_cycle","status","notes","contract_image"]
+        fields = ["id","room","tenant","tenant_name","tenant_phone","tenant_email","room_name","monthly_rent","start_date","end_date","deposit","billing_cycle","status","notes","contract_image","contract_image_base64"]
 
 
 

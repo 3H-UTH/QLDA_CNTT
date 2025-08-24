@@ -18,7 +18,8 @@ class Room(models.Model):
     bathrooms = models.PositiveIntegerField(default=1, help_text="Số phòng tắm")
     address = models.CharField(max_length=255, blank=True, default='', help_text="Địa chỉ phòng")
     detail = models.TextField(blank=True, default='', help_text="Mô tả chi tiết về phòng")
-    image = models.ImageField(upload_to='rooms/', blank=True, null=True, help_text="Hình ảnh chính của phòng")
+    image = models.TextField(blank=True, null=True, help_text="Hình ảnh chính của phòng (base64 hoặc URL)")
+   
     images = models.JSONField(default=list, blank=True, help_text="Danh sách tất cả hình ảnh của phòng (base64)")
     
     # Thông tin liên hệ chủ nhà
@@ -75,6 +76,7 @@ class Contract(models.Model):
     
     # Upload ảnh hợp đồng đã ký
     contract_image = models.ImageField(upload_to='contracts/', blank=True, null=True, help_text="Ảnh hợp đồng đã ký (nếu có)")
+    contract_image_base64 = models.TextField(blank=True, default='', help_text="Ảnh hợp đồng dạng base64")
     
     # Thông tin liên kết và thời gian
     rental_request = models.OneToOneField("RentalRequest", null=True, blank=True, on_delete=models.SET_NULL, related_name="resulting_contract", help_text="Yêu cầu xem nhà dẫn đến hợp đồng này")

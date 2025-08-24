@@ -202,71 +202,71 @@ class RentalAPI {
     });
   }
 
-  // Room methods with file upload support
+  // Room methods with file upload support - DEPRECATED
+  // These methods are kept for backward compatibility but should not be used
+  // All new implementations should use createRoom/updateRoom with base64 images
   async createRoomWithFile(formData) {
-    const url = `${this.baseURL}/rooms/`;
-    const config = {
-      method: 'POST',
-      body: formData, // Don't set Content-Type for FormData
-    };
-
-    // Add auth token if available
-    if (this.token) {
-      config.headers = {
-        'Authorization': `Bearer ${this.token}`,
-      };
-    }
-
-    try {
-      const response = await fetch(url, config);
-      
-      // Handle 401 - try refresh token
-      if (response.status === 401 && this.refreshToken) {
-        await this.refreshAccessToken();
-        // Retry with new token
-        config.headers['Authorization'] = `Bearer ${this.token}`;
-        const retryResponse = await fetch(url, config);
-        return await this.handleResponse(retryResponse);
+    console.warn('createRoomWithFile is deprecated. Use createRoom with images_base64 instead.');
+    // Convert FormData to regular object and handle images as base64
+    const roomData = {};
+    const imageFiles = [];
+    
+    for (let [key, value] of formData.entries()) {
+      if (key === 'images') {
+        imageFiles.push(value);
+      } else {
+        roomData[key] = value;
       }
-
-      return await this.handleResponse(response);
-    } catch (error) {
-      console.error('API request failed:', error);
-      throw error;
     }
+    
+    // Convert images to base64
+    if (imageFiles.length > 0) {
+      const base64Images = [];
+      for (const file of imageFiles) {
+        const base64 = await this.convertFileToBase64(file);
+        base64Images.push(base64);
+      }
+      roomData.images_base64 = base64Images;
+    }
+    
+    return await this.createRoom(roomData);
   }
 
   async updateRoomWithFile(id, formData) {
-    const url = `${this.baseURL}/rooms/${id}/`;
-    const config = {
-      method: 'PUT',
-      body: formData, // Don't set Content-Type for FormData
-    };
-
-    // Add auth token if available
-    if (this.token) {
-      config.headers = {
-        'Authorization': `Bearer ${this.token}`,
-      };
-    }
-
-    try {
-      const response = await fetch(url, config);
-      
-      // Handle 401 - try refresh token
-      if (response.status === 401 && this.refreshToken) {
-        await this.refreshAccessToken();
-        // Retry with new token
-        config.headers['Authorization'] = `Bearer ${this.token}`;
-        const retryResponse = await fetch(url, config);
-        return await this.handleResponse(retryResponse);
+    console.warn('updateRoomWithFile is deprecated. Use updateRoom with images_base64 instead.');
+    // Convert FormData to regular object and handle images as base64
+    const roomData = {};
+    const imageFiles = [];
+    
+    for (let [key, value] of formData.entries()) {
+      if (key === 'images') {
+        imageFiles.push(value);
+      } else {
+        roomData[key] = value;
       }
-
-      return await this.handleResponse(response);
-    } catch (error) {
-      console.error('API request failed:', error);
-      throw error;
     }
+    
+    // Convert images to base64
+    if (imageFiles.length > 0) {
+      const base64Images = [];
+      for (const file of imageFiles) {
+        const base64 = await this.convertFileToBase64(file);
+        base64Images.push(base64);
+      }
+      roomData.images_base64 = base64Images;
+    }
+    
+    return await this.updateRoom(id, roomData);
+  }
+
+  // Helper method to convert file to base64
+  convertFileToBase64(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
   }
 
   // Contract methods
@@ -287,38 +287,30 @@ class RentalAPI {
     });
   }
 
-  // Create contract with file upload support
+  // Create contract with file upload support - DEPRECATED
+  // This method is kept for backward compatibility but should not be used
+  // All new implementations should use createContract with contract_image_base64
   async createContractWithFile(formData) {
-    const url = `${this.baseURL}/contracts/`;
-    const config = {
-      method: 'POST',
-      body: formData, // FormData automatically sets correct Content-Type
-    };
-
-    // Add auth token if available
-    if (this.token) {
-      config.headers = {
-        'Authorization': `Bearer ${this.token}`,
-      };
-    }
-
-    try {
-      const response = await fetch(url, config);
-      
-      // Handle 401 - try refresh token
-      if (response.status === 401 && this.refreshToken) {
-        await this.refreshAccessToken();
-        // Retry with new token
-        config.headers['Authorization'] = `Bearer ${this.token}`;
-        const retryResponse = await fetch(url, config);
-        return await this.handleResponse(retryResponse);
+    console.warn('createContractWithFile is deprecated. Use createContract with contract_image_base64 instead.');
+    // Convert FormData to regular object and handle image as base64
+    const contractData = {};
+    let imageFile = null;
+    
+    for (let [key, value] of formData.entries()) {
+      if (key === 'contract_image') {
+        imageFile = value;
+      } else {
+        contractData[key] = value;
       }
-
-      return await this.handleResponse(response);
-    } catch (error) {
-      console.error('API request failed:', error);
-      throw error;
     }
+    
+    // Convert image to base64 if present
+    if (imageFile && imageFile.size > 0) {
+      const base64Image = await this.convertFileToBase64(imageFile);
+      contractData.contract_image_base64 = base64Image;
+    }
+    
+    return await this.createContract(contractData);
   }
 
   async updateContract(id, contractData) {

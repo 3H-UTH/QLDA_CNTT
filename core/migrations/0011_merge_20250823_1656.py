@@ -7,7 +7,6 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ('core', '0010_alter_contract_status_add_fk_rental_request'),
-        ('core', '0010_alter_contract_status_add_rental_request_id'),
         ('core', '0010_create_rental_request_model'),
     ]
 
