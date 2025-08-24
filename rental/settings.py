@@ -98,6 +98,7 @@ REST_FRAMEWORK.update({
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',  # Add WhiteNoise for static files
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -145,20 +146,32 @@ WSGI_APPLICATION = 'rental.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
-DATABASES = {
-    "default": {
-        "ENGINE": os.getenv('DB_ENGINE', 'django.db.backends.mysql'),
-        "NAME": os.getenv('DB_NAME', BASE_DIR / ''),
-        "USER": os.getenv('DB_USER', ''),
-        "PASSWORD": os.getenv('DB_PASSWORD', ''),
-        "HOST": os.getenv('DB_HOST', ''),
-        "PORT": os.getenv('DB_PORT', ''),
-        "OPTIONS": {
-            "charset": "utf8mb4",
-            "init_command": "SET sql_mode='STRICT_TRANS_TABLES',time_zone='+00:00'",
-        } if os.getenv('DB_ENGINE') == 'django.db.backends.mysql' else {},
+import dj_database_url
+
+# Check if DATABASE_URL is set (for production/Render)
+DATABASE_URL = os.getenv('DATABASE_URL')
+
+if DATABASE_URL:
+    # Production database configuration (PostgreSQL on Render)
+    DATABASES = {
+        'default': dj_database_url.parse(DATABASE_URL)
     }
-}
+else:
+    # Development database configuration
+    DATABASES = {
+        "default": {
+            "ENGINE": os.getenv('DB_ENGINE', 'django.db.backends.sqlite3'),
+            "NAME": os.getenv('DB_NAME', BASE_DIR / 'db.sqlite3'),
+            "USER": os.getenv('DB_USER', ''),
+            "PASSWORD": os.getenv('DB_PASSWORD', ''),
+            "HOST": os.getenv('DB_HOST', ''),
+            "PORT": os.getenv('DB_PORT', ''),
+            "OPTIONS": {
+                "charset": "utf8mb4",
+                "init_command": "SET sql_mode='STRICT_TRANS_TABLES',time_zone='+00:00'",
+            } if os.getenv('DB_ENGINE') == 'django.db.backends.mysql' else {},
+        }
+    }
 
 
 
