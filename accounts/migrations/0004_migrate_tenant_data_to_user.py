@@ -13,15 +13,34 @@ def migrate_tenant_data(apps, schema_editor):
     from django.db import connection
     
     with connection.cursor() as cursor:
-        # Check if core_tenant table exists
-        cursor.execute("""
-            SELECT COUNT(*) 
-            FROM information_schema.tables 
-            WHERE table_schema = DATABASE() 
-            AND table_name = 'core_tenant'
-        """)
-        
-        if cursor.fetchone()[0] > 0:
+        # Check if core_tenant table exists (works for PostgreSQL, MySQL, SQLite)
+        try:
+            if connection.vendor == 'mysql':
+                cursor.execute("""
+                    SELECT COUNT(*) 
+                    FROM information_schema.tables 
+                    WHERE table_schema = DATABASE() 
+                    AND table_name = 'core_tenant'
+                """)
+            elif connection.vendor == 'postgresql':
+                cursor.execute("""
+                    SELECT COUNT(*) 
+                    FROM information_schema.tables 
+                    WHERE table_name = 'core_tenant'
+                """)
+            else:  # SQLite
+                cursor.execute("""
+                    SELECT COUNT(*) 
+                    FROM sqlite_master 
+                    WHERE type='table' AND name='core_tenant'
+                """)
+            
+            table_exists = cursor.fetchone()[0] > 0
+        except Exception:
+            # If any error occurs, assume table doesn't exist
+            table_exists = False
+
+        if table_exists:
             # Get all tenant data
             cursor.execute("""
                 SELECT ct.user_id, ct.id_number, ct.phone, ct.address, ct.emergency_contact,
