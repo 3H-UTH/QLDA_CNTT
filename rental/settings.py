@@ -55,11 +55,16 @@ INSTALLED_APPS = [
 AUTH_USER_MODEL = "accounts.User"
 
 # CORS Configuration
-CORS_ALLOWED_ORIGINS = [
-    origin.strip() for origin in os.getenv('CORS_ALLOWED_ORIGINS', 
-    'http://localhost:8000,http://127.0.0.1:5500,http://localhost:5500').split(',')
-    if origin.strip()
-]
+CORS_ALLOWED_ORIGINS = []
+cors_origins = os.getenv('CORS_ALLOWED_ORIGINS', 'http://localhost:8000,http://127.0.0.1:5500,http://localhost:5500')
+
+for origin in cors_origins.split(','):
+    origin = origin.strip()
+    if origin:
+        # Tự động thêm https:// nếu chưa có scheme
+        if not origin.startswith(('http://', 'https://')):
+            origin = f'https://{origin}'
+        CORS_ALLOWED_ORIGINS.append(origin)
 
 # Thêm cấu hình CORS để hỗ trợ phát triển
 CORS_ALLOW_CREDENTIALS = True
